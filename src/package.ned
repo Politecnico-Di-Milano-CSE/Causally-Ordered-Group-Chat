@@ -1,0 +1,3 @@
+package groupchat;
+
+@license(LGPL);
