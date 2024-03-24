@@ -1,4 +1,4 @@
-package com.yourdomain;
+package it.polimi.groupchat;
 
 /**
  * Hello world!

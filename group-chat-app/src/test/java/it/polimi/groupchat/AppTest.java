@@ -1,4 +1,4 @@
-package com.yourdomain;
+package it.polimi.groupchat;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
