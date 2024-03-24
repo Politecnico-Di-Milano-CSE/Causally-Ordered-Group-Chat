@@ -69,8 +69,6 @@
 ### Implement Room and User Management:
 - Develop logic for managing rooms and users.
 
-...
-
 ## Simulation Alternative:
 
 If opting to simulate the application using OmNet++, you'll need to:
