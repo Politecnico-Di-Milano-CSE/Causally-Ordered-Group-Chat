@@ -111,4 +111,15 @@ public class NetworkManager {
             e.printStackTrace();
         }
     }
+
+    public static void main(String[] args) {
+        // Assuming port 5000 is used for communication
+        int port = 5000;
+
+        // Example node addresses, replace with actual addresses
+        String[] nodeAddresses = { "127.0.0.1", "127.0.0.2", "127.0.0.3", "127.0.0.4", "127.0.0.5" };
+
+        NetworkManager networkManager = new NetworkManager(port, nodeAddresses);
+        networkManager.startServer(); // Start the server loop
+    }
 }
