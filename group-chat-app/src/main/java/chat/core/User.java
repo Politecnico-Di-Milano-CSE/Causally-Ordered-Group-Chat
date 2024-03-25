@@ -89,12 +89,14 @@ public class User {
 
     private void sendMessage(Message message) {
         try {
-            out.writeObject(message);
-            out.flush();
+            if (out != null) {
+                out.writeObject(message);
+                out.flush();
+            } else {
+                System.err.println("Error: Output stream is not initialized.");
+            }
         } catch (IOException e) {
-            // It's good practice to handle specific exceptions if we can recover from them
             System.err.println("Error sending message: " + e.getMessage());
-            // Consider reconnecting or cleaning up resources here
         }
     }
 

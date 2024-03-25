@@ -1,6 +1,7 @@
 package it.polimi.groupchat;
 
 import chat.core.User;
+
 import java.util.Scanner;
 
 public class App {
@@ -11,13 +12,11 @@ public class App {
         String username = scanner.nextLine();
 
         User user = new User(username);
-
-        // Replace with the actual server address and port
         user.setServerAddress("127.0.0.1", 6000);
+        user.connectToServer(); // Connect to the server
 
-        // Example to create a room
         System.out.println("Creating a room 'testRoom1'.");
-        user.createRoom("testRoom1");
+        user.createRoom("testRoom1"); // Attempt to create a room
 
         // Keep the client running to listen for incoming messages
         boolean running = true;
@@ -28,12 +27,12 @@ public class App {
                 case "create":
                     System.out.println("Enter room name to create:");
                     String roomToCreate = scanner.nextLine();
-                    user.createRoom(roomToCreate);
+                    user.createRoom(roomToCreate); // Attempt to create a room
                     break;
                 case "delete":
                     System.out.println("Enter room name to delete:");
                     String roomToDelete = scanner.nextLine();
-                    user.deleteRoom(roomToDelete);
+                    user.deleteRoom(roomToDelete); // Attempt to delete a room
                     break;
                 case "exit":
                     running = false;
