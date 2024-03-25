@@ -62,13 +62,14 @@ public class NetworkManager {
         }
 
         private void createRoom(String roomId, String username) {
+            // Logic to handle the creation of a room
             if (!rooms.containsKey(roomId)) {
-                // Create a new room and add it to the list of rooms
                 Room newRoom = new Room(roomId);
                 rooms.put(roomId, newRoom);
-                // Further logic for notifying participants or handling the room creation
+                // Further logic...
             } else {
-                // Handle case where room already exists
+                // Notify the attempt to create a duplicate room
+                System.out.println("Attempted to create a room that already exists: " + roomId);
             }
         }
 

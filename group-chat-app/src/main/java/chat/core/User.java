@@ -2,20 +2,39 @@ package chat.core;
 
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 public class User {
     private String username;
+    private String userId; // Unique ID for the user
     private Set<Room> rooms;
 
     public User(String username) {
         this.username = username;
+        this.userId = UUID.randomUUID().toString(); // Assigning a unique ID
+        this.rooms = new HashSet<>(); // Initializing the set of rooms
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getUserId() {
+        return userId;
     }
 
     public void createRoom(String roomId) {
-        // Send a create room message to all nodes
-        rooms.add(new Room(roomId));
-        broadcastToNodes(new Message("create", roomId, this.username));
+        // Check if the room already exists
+        if (rooms.stream().noneMatch(room -> room.getRoomId().equals(roomId))) {
+            Room newRoom = new Room(roomId);
+            rooms.add(newRoom); // Add new room if it doesn't exist
+            broadcastToNodes(new Message("create", roomId, this.username));
+        } else {
+            // Handle room already exists case
+            System.out.println("Room already exists: " + roomId);
+        }
     }
 
     public void deleteRoom(String roomId) {
