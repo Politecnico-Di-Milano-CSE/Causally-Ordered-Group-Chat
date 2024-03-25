@@ -113,8 +113,8 @@ public class NetworkManager {
     }
 
     public static void main(String[] args) {
-        // Assuming port 5000 is used for communication
-        int port = 5000;
+        // Assuming port 6000 is used for communication
+        int port = 6000;
 
         // Example node addresses, replace with actual addresses
         String[] nodeAddresses = { "127.0.0.1", "127.0.0.2", "127.0.0.3", "127.0.0.4", "127.0.0.5" };
