@@ -6,3 +6,5 @@ target/
 
 ### Maven ###
 log/
+
+.DS_Store
