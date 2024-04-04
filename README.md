@@ -21,7 +21,7 @@ This project is a distributed group chat application designed to ensure causal o
 
 ### Installation
 1. Clone the repository:
-git clone https://github.com/yourgithubusername/distributed-group-chat.git
+git clone https://github.com/Politecnico-Di-Milano-CSE/Causally-Ordered-Group-Chat
 
 2. Navigate to the project directory:
 cd distributed-group-chat
