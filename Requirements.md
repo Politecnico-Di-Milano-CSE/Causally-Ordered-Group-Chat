@@ -11,7 +11,7 @@ Implementation Requirements
 - We need to implement a strategy for handling user disconnections and reconnections to ensure
   high availability. This could include caching messages locally when a user is disconnected and
   synchronizing missed messages upon reconnection in a way that respects causal ordering.
-4.Simulation or Real Distributed Application:
+4. Simulation or Real Distributed Application:
 - We need to decide whether to simulate the network behavior using OmNet++ or implement it as
   a real distributed application. If the latter, we need to ensure that our network communication code
   is robust and efficient for a P2P environment.
