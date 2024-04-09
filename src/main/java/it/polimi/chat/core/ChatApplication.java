@@ -3,6 +3,9 @@ package it.polimi.chat.core;
 import it.polimi.chat.network.Node;
 
 import java.util.Scanner;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
 
 public class ChatApplication {
     public static void main(String[] args) {
@@ -28,8 +31,16 @@ public class ChatApplication {
                 case 1:
                     System.out.print("Enter the room ID: ");
                     String roomId = scanner.nextLine();
-                    ChatRoom createdRoom = node.createRoom(roomId);
-                    System.out.println("Room created with ID: " + createdRoom.getRoomId() + " and multicast IP address: " + createdRoom.getMulticastIp());
+                    // New code to get participants - for simplicity, assume user IDs are entered
+                    // separated by commas
+                    System.out.print("Enter participant user IDs (comma-separated): ");
+                    String participantIdsInput = scanner.nextLine();
+                    Set<String> participantIds = new HashSet<>(Arrays.asList(participantIdsInput.split(",")));
+                    // Pass the participant IDs to the createRoom method
+                    ChatRoom createdRoom = node.createRoom(roomId, participantIds);
+                    System.out
+                            .println("Room created with ID: " + createdRoom.getRoomId() + " and multicast IP address: "
+                                    + createdRoom.getMulticastIp() + ", Participants: " + participantIds);
                     break;
                 case 2:
                     System.out.print("Enter the ID of the room to join: ");
