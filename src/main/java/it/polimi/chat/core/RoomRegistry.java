@@ -26,4 +26,3 @@ public class RoomRegistry {
         return rooms.get(roomId); // Return the room with the given ID
     }
 }
-
