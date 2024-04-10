@@ -8,7 +8,9 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.SocketException;
-
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
 
 public class Connection {
     // Constants for the multicast and broadcast ports
@@ -18,7 +20,7 @@ public class Connection {
     // Index for the next multicast IP to use
     public static int nextIpIndex = 0;
     // Array of multicast IPs
-    public static final String[] MULTICAST_IPS = {"224.0.0.1", "224.0.0.2", "224.0.0.3"};
+    public static final String[] MULTICAST_IPS = { "224.0.0.1", "224.0.0.2", "224.0.0.3" };
 
     // Flag to indicate if the broadcast listener is running
     private volatile boolean isBroadcastListenerRunning;
@@ -34,6 +36,7 @@ public class Connection {
             this.broadcastSocket = new MulticastSocket(BROADCAST_PORT);
             // Enable broadcasting on the broadcast socket
             this.broadcastSocket.setBroadcast(true);
+            this.isBroadcastListenerRunning = false;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -43,7 +46,9 @@ public class Connection {
 
     // Method to stop the broadcast listener
     public void stopBroadcastListener() {
-        this.isBroadcastListenerRunning = false;
+        // Set the flag to false to stop the listener threads
+        isBroadcastListenerRunning = false;
+        // Close the sockets to interrupt any blocking calls
         broadcastSocket.close();
     }
 
@@ -82,7 +87,9 @@ public class Connection {
     // Method to listen for multicast messages
     public void listenForMulticastMessages(ChatRoom room, User user, Node node) {
         new Thread(() -> {
-            while (node.isRunning()) {
+            // Set the flag to true when the listener starts
+            isBroadcastListenerRunning = true;
+            while (node.isRunning() && isBroadcastListenerRunning) {
                 try {
                     // Create a buffer for incoming data
                     byte[] buffer = new byte[1000];
@@ -95,7 +102,7 @@ public class Connection {
                     // Print the message
                     System.out.println(user.getUsername() + ": " + message);
                 } catch (SocketException e) {
-                    if (node.isRunning()) {
+                    if (isBroadcastListenerRunning && node.isRunning()) {
                         e.printStackTrace();
                     }
                     break;
@@ -103,6 +110,8 @@ public class Connection {
                     e.printStackTrace();
                 }
             }
+            // Set the flag to false when the listener ends
+            isBroadcastListenerRunning = false;
         }).start();
     }
 
@@ -111,17 +120,19 @@ public class Connection {
         if (message.startsWith("ROOM_CREATED|")) {
             // Split the message into parts
             String[] parts = message.split("\\|");
-            // Extract the room ID, multicast IP and creator user ID
+            // Extract the room ID, multicast IP, creator user ID, and participants
             String roomId = parts[1];
             String multicastIp = parts[2];
             String creatorUserId = parts[3];
+            Set<String> participants = new HashSet<>(Arrays.asList(parts[4].split(",")));
 
-            // Create a new chat room
-            ChatRoom room = new ChatRoom(roomId, multicastIp, creatorUserId);
+            // Create a new chat room with participants
+            ChatRoom room = new ChatRoom(roomId, multicastIp, creatorUserId, participants);
             // Register the room
             roomRegistry.registerRoom(room);
             // Print a message
-            System.out.println("New room created: " + roomId + " with multicast IP address: " + multicastIp + ", Created by: " + creatorUserId);
+            System.out.println("New room created: " + roomId + " with multicast IP address: " + multicastIp
+                    + ", Created by: " + creatorUserId);
         } else {
             // Print the received broadcast message
             System.out.println("Broadcast message received: " + message);
@@ -131,7 +142,9 @@ public class Connection {
     // Method to listen for broadcast messages
     public void listenForBroadcastMessages(RoomRegistry roomRegistry, User user, Node node) {
         new Thread(() -> {
-            while (node.isRunning()) {
+            // Set the flag to true when the listener starts
+            isBroadcastListenerRunning = true;
+            while (node.isRunning() && isBroadcastListenerRunning) {
                 try {
                     // Create a buffer for incoming data
                     byte[] buffer = new byte[1000];
@@ -143,7 +156,7 @@ public class Connection {
                     String message = new String(packet.getData(), 0, packet.getLength(), "UTF-8");
                     processRoomCreationMessage(message, roomRegistry, user);
                 } catch (SocketException e) {
-                    if (node.isRunning()) {
+                    if (isBroadcastListenerRunning && node.isRunning()) {
                         e.printStackTrace();
                     }
                     break;
@@ -151,6 +164,8 @@ public class Connection {
                     e.printStackTrace();
                 }
             }
+            // Set the flag to false when the listener ends
+            isBroadcastListenerRunning = false;
         }).start();
     }
 
