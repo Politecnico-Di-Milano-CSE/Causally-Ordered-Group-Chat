@@ -3,10 +3,16 @@ package it.polimi.chat.network;
 import it.polimi.chat.core.ChatRoom;
 import it.polimi.chat.core.RoomRegistry;
 import it.polimi.chat.core.User;
+import it.polimi.chat.dto.Message;
+
 import java.util.Set;
 import java.net.NetworkInterface;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Node {
     private User user; // The user associated with this node
@@ -15,6 +21,8 @@ public class Node {
     private ChatRoom currentRoom; // The current room this node is in
     private boolean isRunning; // Whether this node is running or not
     private static final int MULTICAST_PORT = 1234; // replace with your actual multicast port
+    private ScheduledExecutorService scheduler;
+
 
     // Constructor
     public Node(User user) {
@@ -22,23 +30,44 @@ public class Node {
         this.connection = new Connection(); // Initialize the connection
         this.roomRegistry = new RoomRegistry(); // Initialize the room registry
         this.isRunning = true; // Set the node as running
+        this.scheduler = Executors.newSingleThreadScheduledExecutor();
+
 
         // Start listening for multicast and broadcast messages
         connection.listenForMulticastMessages(this.currentRoom, this.user, this);
         connection.listenForBroadcastMessages(this.roomRegistry, this.user, this);
+
+        startHeartbeatMessages();
+
+    }
+
+    private void startHeartbeatMessages() {
+        scheduler.scheduleAtFixedRate(this::sendHeartbeatMessage, 5, 5, TimeUnit.SECONDS);
+    }
+
+    private void sendHeartbeatMessage() {
+        Message heartbeatMessage = new Message(user.getUserID(), null, null, user.getUsername());
+        connection.sendBroadcastMessage(heartbeatMessage);
     }
 
     // Method to create a new room
-    public ChatRoom createRoom(String roomId, Set<String> participantUserIds) {
+    public ChatRoom createRoom(String roomId, Set<String> participantIds) {
         String multicastIp = getNextMulticastIp(); // Get the next available multicast IP
-        ChatRoom room = new ChatRoom(roomId, multicastIp, user.getUserID(), participantUserIds); // Create a new room
-                                                                                                 // with participants
+
+        ChatRoom room = new ChatRoom(roomId, multicastIp, user.getUserID(), participantIds); // Create a new room with participants
+        room.addParticipant(user.getUsername());
         joinRoom(room); // Join the newly created room
         roomRegistry.registerRoom(room); // Register the room in the room registry
+
         // Broadcast the creation of the room with participant list
-        String announcement = "ROOM_CREATED|" + roomId + "|" + multicastIp + "|" + user.getUserID() + "|"
-                + String.join(",", participantUserIds);
-        connection.sendBroadcastMessage(announcement); // Broadcast the announcement
+        String announcement = "Room with ID -> " + room.getRoomId() + " and multicast IP -> " + multicastIp +
+                " created by userId -> " + user.getUserID() + "\nwith participants -> "
+                + String.join(",", room.getParticipants());
+        Message message = new Message(user.getUserID(), room.getRoomId(), multicastIp, announcement);
+        System.out.println("Room created!");
+
+        connection.sendBroadcastMessage(message); // Broadcast the announcement
+
         return room; // Return the newly created room
     }
 
@@ -53,6 +82,13 @@ public class Node {
         if (currentRoom != null) {
             leaveRoom(currentRoom); // If already in a room, leave it
         }
+
+        // Check if the user is a participant of the room
+        if (!room.getParticipants().contains(user.getUsername())) {
+            System.out.println("You are not a participant in this room.");
+            return;
+        }
+
         try {
             InetAddress group = InetAddress.getByName(room.getMulticastIp()); // Get the multicast group address
             NetworkInterface networkInterface = NetworkInterface.getByInetAddress(group);
@@ -71,14 +107,14 @@ public class Node {
             NetworkInterface networkInterface = NetworkInterface.getByInetAddress(group);
             connection.getMulticastSocket().leaveGroup(new InetSocketAddress(group, MULTICAST_PORT), networkInterface);
             currentRoom = null; // Set the current room to null
-            System.out.println("You leaved the room " + room.getRoomId() + "."); // Print a message
+            System.out.println("You left the room " + room.getRoomId() + "."); // Print a message
         } catch (Exception e) {
             e.printStackTrace(); // Print any exceptions
         }
     }
 
     // Method to send a message
-    public void sendMessage(String message) {
+    public void sendMessage(String content) {
         // Find the current room
         ChatRoom currentRoom = user.getRooms().stream()
                 .filter(room -> room.getMulticastIp()
@@ -87,22 +123,17 @@ public class Node {
                 .orElse(null);
 
         if (currentRoom == null) {
-            System.out.println("You are not in any room. Join a room before sending a message."); // If not in a room,
-                                                                                                  // print a message
+            System.out.println("You are not in any room. Join a room before sending a message.");
             return;
         }
 
-        // Check if the user is a participant in the current room before sending a
-        // message
-        if (currentRoom.getParticipants().contains(user.getUserID())) {
+        // Check if the user is a participant in the current room before sending a message
+        if (currentRoom.getParticipants().contains(user.getUsername())) {
+            Message message = new Message(user.getUserID(), currentRoom.getRoomId(), currentRoom.getMulticastIp(), content);
             connection.sendMulticastMessage(message, currentRoom.getMulticastIp()); // Send the message
-            System.out.println("Message sent to the room with ID: " + currentRoom.getRoomId()); // Print a message
+            System.out.println("Message sent to the room with ID: " + currentRoom.getRoomId());
         } else {
-            System.out.println("You are not a participant of the room with ID: " + currentRoom.getRoomId()); // Inform
-                                                                                                             // the user
-                                                                                                             // they are
-                                                                                                             // not a
-                                                                                                             // participant
+            System.out.println("You are not a participant in this room.");
         }
     }
 
@@ -165,10 +196,15 @@ public class Node {
 
         connection.closeMulticastSocket();
         connection.stopBroadcastListener();
+        scheduler.shutdown();
     }
 
     public boolean isRunning() {
         return isRunning;
+    }
+
+    public Connection getConnection() {
+        return connection;
     }
 
 }

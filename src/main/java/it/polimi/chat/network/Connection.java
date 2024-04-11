@@ -3,14 +3,18 @@ package it.polimi.chat.network;
 import it.polimi.chat.core.ChatRoom;
 import it.polimi.chat.core.RoomRegistry;
 import it.polimi.chat.core.User;
+import it.polimi.chat.dto.Message;
 
+import java.io.*;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.SocketException;
+import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Arrays;
+import java.util.HashMap;
 
 public class Connection {
     // Constants for the multicast and broadcast ports
@@ -27,6 +31,8 @@ public class Connection {
     // Multicast and broadcast sockets
     private MulticastSocket multicastSocket;
     private MulticastSocket broadcastSocket;
+    private Map<String, User> knownUsers;
+
 
     // Constructor
     public Connection() {
@@ -37,6 +43,8 @@ public class Connection {
             // Enable broadcasting on the broadcast socket
             this.broadcastSocket.setBroadcast(true);
             this.isBroadcastListenerRunning = false;
+            this.knownUsers = new HashMap<>();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -53,10 +61,14 @@ public class Connection {
     }
 
     // Method to send a multicast message
-    public void sendMulticastMessage(String message, String multicastIp) {
+    public void sendMulticastMessage(Message message, String multicastIp) {
         try {
-            // Convert the message to bytes
-            byte[] buffer = message.getBytes("UTF-8");
+            // Serialize the Message object to a byte array
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(message);
+            byte[] buffer = baos.toByteArray();
+
             // Get the multicast group address
             InetAddress group = InetAddress.getByName(multicastIp);
             // Create a datagram packet with the message, group address and port
@@ -69,22 +81,29 @@ public class Connection {
     }
 
     // Method to send a broadcast message
-    public void sendBroadcastMessage(String message) {
+    public void sendBroadcastMessage(Message message) {
         try {
-            // Convert the message to bytes
-            byte[] buffer = message.getBytes();
+            // Serialize the Message object to a byte array
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(message);
+            byte[] buffer = baos.toByteArray();
+
             // Get the broadcast address
             InetAddress address = InetAddress.getByName("255.255.255.255");
-            // Create a datagram packet with the message, broadcast address and port
+
+            // Create a datagram packet with the serialized object, broadcast address, and port
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, BROADCAST_PORT);
+
             // Send the packet
             broadcastSocket.send(packet);
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     // Method to listen for multicast messages
+// Method to listen for multicast messages
     public void listenForMulticastMessages(ChatRoom room, User user, Node node) {
         new Thread(() -> {
             // Set the flag to true when the listener starts
@@ -92,15 +111,18 @@ public class Connection {
             while (node.isRunning() && isBroadcastListenerRunning) {
                 try {
                     // Create a buffer for incoming data
-                    byte[] buffer = new byte[1000];
+                    byte[] buffer = new byte[1024];
                     // Create a datagram packet for incoming packets
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     // Receive a packet
                     multicastSocket.receive(packet);
-                    // Convert the packet data to a string
-                    String message = new String(packet.getData(), 0, packet.getLength(), "UTF-8");
-                    // Print the message
-                    System.out.println(user.getUsername() + ": " + message);
+
+                    // Deserialize the received object
+                    ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+                    ObjectInputStream ois = new ObjectInputStream(bais);
+                    Message message = (Message) ois.readObject();
+
+                    System.out.println(message.getUserID() + ": " + message.getContent());
                 } catch (SocketException e) {
                     if (isBroadcastListenerRunning && node.isRunning()) {
                         e.printStackTrace();
@@ -116,26 +138,25 @@ public class Connection {
     }
 
     // Method to process a room creation message
-    private void processRoomCreationMessage(String message, RoomRegistry roomRegistry, User user) {
-        if (message.startsWith("ROOM_CREATED|")) {
-            // Split the message into parts
-            String[] parts = message.split("\\|");
-            // Extract the room ID, multicast IP, creator user ID, and participants
-            String roomId = parts[1];
-            String multicastIp = parts[2];
-            String creatorUserId = parts[3];
-            Set<String> participants = new HashSet<>(Arrays.asList(parts[4].split(",")));
+    private void processRoomCreationMessage(Message message, RoomRegistry roomRegistry, User user) {
+        // Check if the message is a room creation message
+        if (message.getRoomId() != null && message.getMulticastIp() != null && message.getUserID() != null) {
+            // Extract the room details from the message
+            String roomId = message.getRoomId();
+            String multicastIp = message.getMulticastIp();
+            String creatorUserId = message.getUserID();
+            String content = message.getContent();
+            Set<String> participants = new HashSet<>(Arrays.asList(message.getContent().split(",")));
 
             // Create a new chat room with participants
             ChatRoom room = new ChatRoom(roomId, multicastIp, creatorUserId, participants);
             // Register the room
             roomRegistry.registerRoom(room);
             // Print a message
-            System.out.println("New room created: " + roomId + " with multicast IP address: " + multicastIp
-                    + ", Created by: " + creatorUserId);
+            System.out.println(content);
         } else {
             // Print the received broadcast message
-            System.out.println("Broadcast message received: " + message);
+            System.out.println("Broadcast message received: " + message.getContent());
         }
     }
 
@@ -147,14 +168,24 @@ public class Connection {
             while (node.isRunning() && isBroadcastListenerRunning) {
                 try {
                     // Create a buffer for incoming data
-                    byte[] buffer = new byte[1000];
+                    byte[] buffer = new byte[1024];
                     // Create a datagram packet for incoming packets
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     // Receive a packet
                     broadcastSocket.receive(packet);
-                    // Process the received message
-                    String message = new String(packet.getData(), 0, packet.getLength(), "UTF-8");
-                    processRoomCreationMessage(message, roomRegistry, user);
+
+                    // Deserialize the received object
+                    ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+                    ObjectInputStream ois = new ObjectInputStream(bais);
+                    Message message = (Message) ois.readObject();
+
+                    // Process the message
+                    if (message.getRoomId() == null && message.getMulticastIp() == null) {
+                        // It's a heartbeat message, update the known users
+                        updateKnownUser(message.getUserID(), message.getContent());
+                    } else {
+                        processRoomCreationMessage(message, roomRegistry, user);
+                    }
                 } catch (SocketException e) {
                     if (isBroadcastListenerRunning && node.isRunning()) {
                         e.printStackTrace();
@@ -167,6 +198,29 @@ public class Connection {
             // Set the flag to false when the listener ends
             isBroadcastListenerRunning = false;
         }).start();
+    }
+
+    private void updateKnownUser(String userId, String username) {
+        if (!knownUsers.containsKey(userId)) {
+            User newUser = new User(username);
+            newUser.setUserID(userId);
+            knownUsers.put(userId, newUser);
+            System.out.println("New user added to known users: " + username);
+        } else {
+            User existingUser = knownUsers.get(userId);
+            if (!existingUser.getUsername().equals(username)) {
+                existingUser.setUsername(username);
+                System.out.println("Known user updated: " + username);
+            }
+        }
+    }
+
+
+    public void printKnownUsers() {
+        System.out.println("List of known users:");
+        for (User user : knownUsers.values()) {
+            System.out.println("- Username: " + user.getUsername() + ", UserID: " + user.getUserID());
+        }
     }
 
     public MulticastSocket getMulticastSocket() {
