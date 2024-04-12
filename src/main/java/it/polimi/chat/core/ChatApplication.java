@@ -21,8 +21,9 @@ public class ChatApplication {
             System.out.println("3. Delete a room");
             System.out.println("4. Send a multicast message");
             System.out.println("5. Print list of known rooms");
-            System.out.println("6. Leave room");
-            System.out.println("7. Shut down the application");
+            System.out.println("6. Print list of known users");
+            System.out.println("7. Leave room");
+            System.out.println("8. Shut down the application");
             System.out.print("Choose an option: ");
             int option = scanner.nextInt();
             scanner.nextLine(); // consume the newline
@@ -31,16 +32,12 @@ public class ChatApplication {
                 case 1:
                     System.out.print("Enter the room ID: ");
                     String roomId = scanner.nextLine();
-                    // New code to get participants - for simplicity, assume user IDs are entered
-                    // separated by commas
-                    System.out.print("Enter participant user IDs (comma-separated): ");
-                    String participantIdsInput = scanner.nextLine();
-                    Set<String> participantIds = new HashSet<>(Arrays.asList(participantIdsInput.split(",")));
-                    // Pass the participant IDs to the createRoom method
-                    ChatRoom createdRoom = node.createRoom(roomId, participantIds);
-                    System.out
-                            .println("Room created with ID: " + createdRoom.getRoomId() + " and multicast IP address: "
-                                    + createdRoom.getMulticastIp() + ", Participants: " + participantIds);
+                    System.out.print("Enter participant usernames (comma-separated): ");
+                    String participantNamesInput = scanner.nextLine();
+                    Set<String> participantUsernames = new HashSet<>(Arrays.asList(participantNamesInput.split(",")));
+                    ChatRoom createdRoom = node.createRoom(roomId, participantUsernames);
+                    System.out.println("Room created with ID: " + createdRoom.getRoomId() + " and multicast IP address: "
+                            + createdRoom.getMulticastIp() + ", Participants: " + participantUsernames);
                     break;
                 case 2:
                     System.out.print("Enter the ID of the room to join: ");
@@ -50,8 +47,12 @@ public class ChatApplication {
                         if (user.getRooms().contains(roomToJoin)) {
                             System.out.println("You are already a member of the room with ID: " + joinRoomId);
                         } else {
-                            node.joinRoom(roomToJoin);
-                            System.out.println("Joined the room with ID: " + joinRoomId);
+                            if (roomToJoin.getParticipants().contains(user.getUsername())) {
+                                node.joinRoom(roomToJoin);
+                                System.out.println("Joined the room with ID: " + joinRoomId);
+                            } else {
+                                System.out.println("You are not a participant in this room.");
+                            }
                         }
                     } else {
                         System.out.println("Room with ID " + joinRoomId + " not found.");
@@ -75,13 +76,16 @@ public class ChatApplication {
                     node.printKnownRooms();
                     break;
                 case 6:
+                    node.getConnection().printKnownUsers();
+                    break;
+                case 7:
                     if (node.getCurrentRoom() == null) {
                         System.out.println("You are not in any room. Join a room before leaving it.");
                         break;
                     }
                     node.leaveRoom(node.getCurrentRoom());
                     break;
-                case 7:
+                case 8:
                     node.shutdown();
                     System.exit(0);
             }

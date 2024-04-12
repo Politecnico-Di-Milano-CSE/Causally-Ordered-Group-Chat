@@ -30,4 +30,15 @@ public class User {
         return rooms;
     }
 
+    public void setUserID(String userID) {
+        this.userID = userID;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public void setRooms(HashSet<ChatRoom> rooms) {
+        this.rooms = rooms;
+    }
 }

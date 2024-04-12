@@ -1,5 +1,6 @@
 package it.polimi.chat.core;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -9,6 +10,8 @@ public class ChatRoom {
     private String multicastIp;
     private String creatorUserId;
     private Set<String> participants;
+    boolean isContained = false;
+
 
     public ChatRoom(String roomId, String multicastIp, String creatorUserId, Set<String> participants) {
         this.roomId = roomId;
@@ -36,6 +39,10 @@ public class ChatRoom {
 
     public Set<String> getParticipants() {
         return participants;
+    }
+
+    public void addParticipant(String username){
+        this.participants.add(username);
     }
 
 }
