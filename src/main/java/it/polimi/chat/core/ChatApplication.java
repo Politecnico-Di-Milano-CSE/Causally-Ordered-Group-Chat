@@ -22,9 +22,11 @@ public class ChatApplication {
             System.out.println("4. Send a multicast message");
             System.out.println("5. Print list of known rooms");
             System.out.println("6. Print list of known users");
-            System.out.println("7. Leave room");
-            System.out.println("8. Shut down the application");
+            System.out.println("7. Print vector clock");
+            System.out.println("8. Leave room");
+            System.out.println("9. Shut down the application");
             System.out.print("Choose an option: ");
+
             int option = scanner.nextInt();
             scanner.nextLine(); // consume the newline
 
@@ -44,20 +46,21 @@ public class ChatApplication {
                     String joinRoomId = scanner.nextLine();
                     ChatRoom roomToJoin = node.findRoomById(joinRoomId);
                     if (roomToJoin != null) {
-                        if (user.getRooms().contains(roomToJoin)) {
-                            System.out.println("You are already a member of the room with ID: " + joinRoomId);
-                        } else {
-                            if (roomToJoin.getParticipants().contains(user.getUsername())) {
+                        if(node.getCurrentRoom() == null){
+                            if (user.getRooms().contains(roomToJoin)) {
                                 node.joinRoom(roomToJoin);
-                                System.out.println("Joined the room with ID: " + joinRoomId);
                             } else {
-                                System.out.println("You are not a participant in this room.");
+                                node.joinRoom(roomToJoin);
                             }
+                        }
+                        else {
+                            System.out.println("You are already a member of the room with ID: " + node.getCurrentRoom());
                         }
                     } else {
                         System.out.println("Room with ID " + joinRoomId + " not found.");
                     }
                     break;
+
                 case 3:
                     if (node.getCurrentRoom() == null) {
                         System.out.println("You are not in any room. Join a room before deleting it.");
@@ -79,13 +82,20 @@ public class ChatApplication {
                     node.getConnection().printKnownUsers();
                     break;
                 case 7:
+                    if(node.getVectorClock() == null){
+                        System.out.println("You don't have a vector clock");
+                        break;
+                    }
+                    node.getVectorClock().printVectorClock();
+                    break;
+                case 8:
                     if (node.getCurrentRoom() == null) {
                         System.out.println("You are not in any room. Join a room before leaving it.");
                         break;
                     }
                     node.leaveRoom(node.getCurrentRoom());
                     break;
-                case 8:
+                case 9:
                     node.shutdown();
                     System.exit(0);
             }

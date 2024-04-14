@@ -10,7 +10,6 @@ public class ChatRoom {
     private String multicastIp;
     private String creatorUserId;
     private Set<String> participants;
-    boolean isContained = false;
 
 
     public ChatRoom(String roomId, String multicastIp, String creatorUserId, Set<String> participants) {

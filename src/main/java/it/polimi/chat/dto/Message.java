@@ -1,6 +1,7 @@
 package it.polimi.chat.dto;
 
 import java.io.Serializable;
+import java.util.Set;
 
 public class Message implements Serializable {
     private int id = 0;
@@ -8,13 +9,18 @@ public class Message implements Serializable {
     private String roomId;
     private String multicastIp;
     private String content;
+    private VectorClock vectorClock;
+    private Set<String> participants;
 
-    public Message(String userID, String roomId, String multicastIp, String content) {
+    public Message(String userID, String roomId, String multicastIp, String content, VectorClock vectorClock, Set<String> participants) {
         this.id++;
         this.userID = userID;
         this.roomId = roomId;
         this.multicastIp = multicastIp;
         this.content = content;
+        this.vectorClock = vectorClock;
+        this.participants = participants;
+
     }
 
     public int getId() {
@@ -31,7 +37,6 @@ public class Message implements Serializable {
 
     public void setUserID(String userID) {
         this.userID = userID;
-
     }
 
     public String getRoomId() {
@@ -58,14 +63,19 @@ public class Message implements Serializable {
         this.content = content;
     }
 
-    @Override
-    public String toString() {
-        return "Message{" +
-                "id=" + id +
-                ", userID=" + userID +
-                ", roomId='" + roomId + '\'' +
-                ", multicastIp=" + multicastIp +
-                ", content='" + content + '\'' +
-                '}';
+    public VectorClock getVectorClock() {
+        return vectorClock;
+    }
+
+    public void setVectorClock(VectorClock vectorClock) {
+        this.vectorClock = vectorClock;
+    }
+
+    public Set<String> getParticipants() {
+        return participants;
+    }
+
+    public void setParticipants(Set<String> participants) {
+        this.participants = participants;
     }
 }
