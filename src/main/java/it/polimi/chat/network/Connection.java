@@ -12,8 +12,6 @@ import java.net.MulticastSocket;
 import java.net.SocketException;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
-import java.util.Arrays;
 import java.util.HashMap;
 
 public class Connection {
@@ -103,26 +101,37 @@ public class Connection {
     }
 
     // Method to listen for multicast messages
-// Method to listen for multicast messages
     public void listenForMulticastMessages(ChatRoom room, User user, Node node) {
         new Thread(() -> {
-            // Set the flag to true when the listener starts
             isBroadcastListenerRunning = true;
             while (node.isRunning() && isBroadcastListenerRunning) {
                 try {
-                    // Create a buffer for incoming data
                     byte[] buffer = new byte[1024];
-                    // Create a datagram packet for incoming packets
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                    // Receive a packet
                     multicastSocket.receive(packet);
 
-                    // Deserialize the received object
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                     ObjectInputStream ois = new ObjectInputStream(bais);
                     Message message = (Message) ois.readObject();
 
-                    System.out.println(message.getUserID() + ": " + message.getContent());
+                    if (node.getCurrentRoom() != null && node.getCurrentRoom().getRoomId().equals(message.getRoomId())) {
+                        // Check if the message is from the current user
+                        if (!message.getUserID().equals(user.getUserID())) {
+                            // Check if the received vector clock has a timestamp for a different process that is greater than the local timestamp
+                            for (Map.Entry<String, Integer> entry : message.getVectorClock().getClock().entrySet()) {
+                                if (!entry.getKey().equals(message.getUserID()) && entry.getValue() > node.getVectorClock().getClock().get(entry.getKey())) {
+                                    // If so, hold the message and break the loop
+                                    System.out.println("Holding message until the message from the initial process is received.");
+                                    return;
+                                }
+                            }
+
+                            // If the loop completes without finding a greater timestamp, update the vector clock and print the message
+                            node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
+                            message.getVectorClock().printVectorClock();
+                        }
+                        System.out.println(message.getUserID() + ": " + message.getContent());
+                    }
                 } catch (SocketException e) {
                     if (isBroadcastListenerRunning && node.isRunning()) {
                         e.printStackTrace();
@@ -132,10 +141,10 @@ public class Connection {
                     e.printStackTrace();
                 }
             }
-            // Set the flag to false when the listener ends
             isBroadcastListenerRunning = false;
         }).start();
     }
+
 
     // Method to process a room creation message
     private void processRoomCreationMessage(Message message, RoomRegistry roomRegistry, User user) {
@@ -146,7 +155,7 @@ public class Connection {
             String multicastIp = message.getMulticastIp();
             String creatorUserId = message.getUserID();
             String content = message.getContent();
-            Set<String> participants = new HashSet<>(Arrays.asList(message.getContent().split(",")));
+            Set<String> participants = message.getParticipants();
 
             // Create a new chat room with participants
             ChatRoom room = new ChatRoom(roomId, multicastIp, creatorUserId, participants);
@@ -215,7 +224,6 @@ public class Connection {
         }
     }
 
-
     public void printKnownUsers() {
         System.out.println("List of known users:");
         for (User user : knownUsers.values()) {
@@ -231,4 +239,11 @@ public class Connection {
         multicastSocket.close();
     }
 
+    public Map<String, User> getKnownUsers() {
+        return knownUsers;
+    }
+
+    public void setKnownUsers(Map<String, User> knownUsers) {
+        this.knownUsers = knownUsers;
+    }
 }

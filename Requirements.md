@@ -1,12 +1,11 @@
 Project Requirements and Areas for Improvement
 Implementation Requirements
 1. Participant Management in Rooms:
-- We need to implement functionality to define and store the participants of each room at creation
-  time and ensure that messages within a room are only exchanged among its participants.
+- We need to implement a functionality in order to register the users in the Rooms, so that
+  is possible to retrieve how many users are connected in the current room, the userId of the 
+  participants and other attributes
 2. Message Posting and Causal Delivery:
-- We need to implement the definition of the message 
-- We need to implement a mechanism to ensure that messages are delivered in causal order
-  within each room, using the vector clocks.
+- We need to implement a mechanism that allows "delayed" messages to be sent to unsynchronized users
 3. Handling Disconnections and Reconnections:
 - We need to implement a strategy for handling user disconnections and reconnections to ensure
   high availability. This could include caching messages locally when a user is disconnected and
