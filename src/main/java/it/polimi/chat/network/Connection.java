@@ -4,25 +4,24 @@ import it.polimi.chat.core.ChatRoom;
 import it.polimi.chat.core.RoomRegistry;
 import it.polimi.chat.core.User;
 import it.polimi.chat.dto.Message;
+import org.apache.commons.collections4.BidiMap;
 
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.SocketException;
-import java.util.Map;
-import java.util.Set;
-import java.util.HashMap;
+import java.util.*;
 
 public class Connection {
     // Constants for the multicast and broadcast ports
-    private static final int MULTICAST_PORT = 1234;
-    private static final int BROADCAST_PORT = 1235;
+    private static final int MULTICAST_PORT = 2236;
+    private static final int BROADCAST_PORT = 2235;
 
     // Index for the next multicast IP to use
     public static int nextIpIndex = 0;
     // Array of multicast IPs
-    public static final String[] MULTICAST_IPS = { "224.0.0.1", "224.0.0.2", "224.0.0.3" };
+    public static final String[] MULTICAST_IPS = { "224.0.0.10", "224.0.0.11", "224.0.0.12" };
 
     // Flag to indicate if the broadcast listener is running
     private volatile boolean isBroadcastListenerRunning;
@@ -30,7 +29,7 @@ public class Connection {
     private MulticastSocket multicastSocket;
     private MulticastSocket broadcastSocket;
     private Map<String, User> knownUsers;
-
+    private Map<String, List<String>> usernameToId;
 
     // Constructor
     public Connection() {
@@ -42,7 +41,7 @@ public class Connection {
             this.broadcastSocket.setBroadcast(true);
             this.isBroadcastListenerRunning = false;
             this.knownUsers = new HashMap<>();
-
+            this.usernameToId = new HashMap<>();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -155,7 +154,7 @@ public class Connection {
             String multicastIp = message.getMulticastIp();
             String creatorUserId = message.getUserID();
             String content = message.getContent();
-            Set<String> participants = message.getParticipants();
+            BidiMap<String,String> participants = message.getParticipants();
 
             // Create a new chat room with participants
             ChatRoom room = new ChatRoom(roomId, multicastIp, creatorUserId, participants);
@@ -215,6 +214,12 @@ public class Connection {
             newUser.setUserID(userId);
             knownUsers.put(userId, newUser);
             System.out.println("New user added to known users: " + username);
+            if (!usernameToId.containsKey(username)) {
+                usernameToId.put(username, new ArrayList<>());
+                usernameToId.get(username).add(userId);
+            } else{
+                usernameToId.get(username).add(userId);
+            }
         } else {
             User existingUser = knownUsers.get(userId);
             if (!existingUser.getUsername().equals(username)) {
@@ -245,5 +250,8 @@ public class Connection {
 
     public void setKnownUsers(Map<String, User> knownUsers) {
         this.knownUsers = knownUsers;
+    }
+    public Map <String, List<String>> getUsernameToId() {
+        return usernameToId;
     }
 }

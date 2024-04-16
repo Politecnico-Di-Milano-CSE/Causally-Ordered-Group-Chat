@@ -5,6 +5,8 @@ import it.polimi.chat.core.RoomRegistry;
 import it.polimi.chat.core.User;
 import it.polimi.chat.dto.Message;
 import it.polimi.chat.dto.VectorClock;
+import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 
 import java.util.Set;
 import java.net.NetworkInterface;
@@ -56,21 +58,22 @@ public class Node {
     // Method to create a new room
     public ChatRoom createRoom(String roomId, Set<String> participantIds) {
         String multicastIp = getNextMulticastIp(); // Get the next available multicast IP
-
-        vectorClock = new VectorClock(connection.getKnownUsers().keySet());
-
-        ChatRoom room = new ChatRoom(roomId, multicastIp, user.getUserID(), participantIds);
+        BidiMap<String,String> usernameIds = new DualHashBidiMap<String,String>();
+        vectorClock = new VectorClock(participantIds);
+        for (String id: participantIds ){
+            usernameIds.put(id, connection.getKnownUsers().get(id).getUsername());
+        }
+        ChatRoom room = new ChatRoom(roomId, multicastIp, user.getUserID(), usernameIds);
         // Create a new room with participants
-        room.addParticipant(user.getUsername());
+        room.addParticipant(user.getUserID(), user.getUsername());
         joinRoom(room); // Join the newly created room
         roomRegistry.registerRoom(room); // Register the room in the room registry
 
         // Broadcast the creation of the room with participant list
         String announcement = "Room with ID -> " + room.getRoomId() + " and multicast IP -> " + multicastIp +
-                " created by userId -> " + user.getUserID() + "\nwith participants -> "
-                + String.join(",", room.getParticipants());
-        Message message = new Message(user.getUserID(), room.getRoomId(), multicastIp, announcement,
-                                    vectorClock, participantIds);
+                " created by userId -> " + user.getUsername() + "\nwith participants -> "
+                + String.join(",", room.getAllParticipantUsername());
+        Message message = new Message(user.getUserID(), room.getRoomId(), multicastIp, announcement, vectorClock, usernameIds);
         System.out.println("Room created!");
         vectorClock.printVectorClock();
 
@@ -92,7 +95,7 @@ public class Node {
         }
 
         // Check if the user is a participant of the room
-        if (!room.getParticipants().contains(user.getUsername())) {
+        if (!room.getParticipantUserId().contains(user.getUserID())) {
             System.out.println("You are not a participant in this room.");
             return;
         }
@@ -104,7 +107,7 @@ public class Node {
             currentRoom = room; // Set the current room
             System.out.println("Joined the room with ID: " + currentRoom.getRoomId());
             user.getRooms().add(room); // Add the room to the user's list of rooms
-            vectorClock = new VectorClock(connection.getKnownUsers().keySet());
+            vectorClock = new VectorClock(room.getParticipantUserId());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -140,7 +143,7 @@ public class Node {
         }
 
         // Check if the user is a participant in the current room before sending a message
-        if (currentRoom.getParticipants().contains(user.getUsername())) {
+        if (currentRoom.getParticipantUserId().contains(user.getUserID())) {
             vectorClock.incrementLocalClock(user.getUserID());
             Message message = new Message(user.getUserID(), currentRoom.getRoomId(), currentRoom.getMulticastIp(),
                                         content, vectorClock, null);

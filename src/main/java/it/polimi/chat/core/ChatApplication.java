@@ -1,11 +1,9 @@
 package it.polimi.chat.core;
 
+import it.polimi.chat.network.Connection;
 import it.polimi.chat.network.Node;
 
-import java.util.Scanner;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Arrays;
+import java.util.*;
 
 public class ChatApplication {
     public static void main(String[] args) {
@@ -14,7 +12,6 @@ public class ChatApplication {
         String username = scanner.nextLine();
         User user = new User(username);
         Node node = new Node(user);
-
         while (true) {
             System.out.println("1. Create a room");
             System.out.println("2. Join a room");
@@ -32,12 +29,31 @@ public class ChatApplication {
 
             switch (option) {
                 case 1:
-                    System.out.print("Enter the room ID: ");
-                    String roomId = scanner.nextLine();
-                    System.out.print("Enter participant usernames (comma-separated): ");
-                    String participantNamesInput = scanner.nextLine();
-                    Set<String> participantUsernames = new HashSet<>(Arrays.asList(participantNamesInput.split(",")));
-                    ChatRoom createdRoom = node.createRoom(roomId, participantUsernames);
+                    Set<String> participantUsernames = new HashSet<>();
+                    String roomId;
+                    Set<String> participantUIds = new HashSet<>();
+                    do {
+                        System.out.print("Enter the room ID: ");
+                        roomId = scanner.nextLine();
+                        System.out.print("Enter participant usernames (comma-separated): ");
+                        String participantNamesInput = scanner.nextLine();
+                        participantUsernames.addAll(Arrays.asList(participantNamesInput.split(",")));
+                    }while(participantUsernames.isEmpty()||participantUsernames.contains(user.getUsername()));
+                    for (String participant : participantUsernames) {
+                        List<String> temp= (node.getConnection().getUsernameToId().get(participant));
+                        if (temp.size()==1){
+                            participantUIds.add(temp.get(0));
+                        } else {
+                            System.out.println("There is more than one UserIds associated to the Username, select which UID is the correct one:");
+                            for (int i=0;i<temp.size();i++){
+                                System.out.println(i+". "+temp.get(i)+"\n");
+                            }
+                            int i=scanner.nextInt();
+                            participantUIds.add(temp.get(i));
+
+                        }
+                    }
+                    ChatRoom createdRoom = node.createRoom(roomId, participantUIds);
                     System.out.println("Room created with ID: " + createdRoom.getRoomId() + " and multicast IP address: "
                             + createdRoom.getMulticastIp() + ", Participants: " + participantUsernames);
                     break;
