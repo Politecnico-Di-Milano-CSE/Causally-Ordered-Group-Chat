@@ -29,6 +29,7 @@ public class Connection {
     private MulticastSocket multicastSocket;
     private MulticastSocket broadcastSocket;
     private Map<String, User> knownUsers;
+    //Maps username to all of the userIds known for that username
     private Map<String, List<String>> usernameToId;
 
     // Constructor
@@ -214,6 +215,7 @@ public class Connection {
             newUser.setUserID(userId);
             knownUsers.put(userId, newUser);
             System.out.println("New user added to known users: " + username);
+            //usernameToId is update once we see a new userid
             if (!usernameToId.containsKey(username)) {
                 usernameToId.put(username, new ArrayList<>());
                 usernameToId.get(username).add(userId);

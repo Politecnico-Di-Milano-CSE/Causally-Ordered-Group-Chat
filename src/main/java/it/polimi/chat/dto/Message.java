@@ -12,6 +12,7 @@ public class Message implements Serializable {
     private String content;
     private VectorClock vectorClock;
     private BidiMap <String,String> participants;
+    //contains the userids and username of the participants
 
     public Message(String userID, String roomId, String multicastIp, String content, VectorClock vectorClock, BidiMap<String,String> participants) {
         this.id++;

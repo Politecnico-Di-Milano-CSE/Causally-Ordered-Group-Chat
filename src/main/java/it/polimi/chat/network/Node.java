@@ -232,7 +232,7 @@ public class Node {
     public VectorClock getVectorClock() {
         return vectorClock;
     }
-    public void printVectorclock(){
+    public void printVectorclock(){ //now the vector clock is directly printed with the usernames instead of the user ids
         vectorClock.printVectorClock(currentRoom.getParticipants());
     }
 }
