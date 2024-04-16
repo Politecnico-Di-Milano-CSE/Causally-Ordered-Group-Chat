@@ -4,6 +4,7 @@ Implementation Requirements
 - We need to implement a functionality in order to register the users in the Rooms, so that
   is possible to retrieve how many users are connected in the current room, the userId of the 
   participants and other attributes
+- introduce a way to create Multicast ips dynamically
 2. Message Posting and Causal Delivery:
 - We need to implement a mechanism that allows "delayed" messages to be sent to unsynchronized users
 3. Handling Disconnections and Reconnections:

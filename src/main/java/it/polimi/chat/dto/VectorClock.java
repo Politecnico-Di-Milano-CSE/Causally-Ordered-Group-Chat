@@ -1,5 +1,7 @@
 package it.polimi.chat.dto;
 
+import org.apache.commons.collections4.BidiMap;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,10 +54,10 @@ public class VectorClock implements Serializable {
         return isUpdated;
     }
 
-    public void printVectorClock() {
+    public void printVectorClock(BidiMap <String,String> usernameIds) {
         System.out.println("Vector Clock:");
         for (Map.Entry<String, Integer> entry : clock.entrySet()) {
-            System.out.println("- User ID: " + entry.getKey() + ", Timestamp: " + entry.getValue());
+            System.out.println("- User ID: " + usernameIds.get(entry.getKey()) + ", Timestamp: " + entry.getValue());
         }
     }
 

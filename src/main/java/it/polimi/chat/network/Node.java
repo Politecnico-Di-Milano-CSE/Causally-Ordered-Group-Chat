@@ -38,7 +38,7 @@ public class Node {
 
 
         // Start listening for multicast and broadcast messages
-        connection.listenForMulticastMessages(this.currentRoom, this.user, this);
+        connection.listenForMulticastMessages( this.user, this);
         connection.listenForBroadcastMessages(this.roomRegistry, this.user, this);
 
         startHeartbeatMessages();
@@ -75,7 +75,7 @@ public class Node {
                 + String.join(",", room.getAllParticipantUsername());
         Message message = new Message(user.getUserID(), room.getRoomId(), multicastIp, announcement, vectorClock, usernameIds);
         System.out.println("Room created!");
-        vectorClock.printVectorClock();
+        printVectorclock();
 
         connection.sendBroadcastMessage(message); // Broadcast the announcement
 
@@ -146,11 +146,11 @@ public class Node {
         if (currentRoom.getParticipantUserId().contains(user.getUserID())) {
             vectorClock.incrementLocalClock(user.getUserID());
             Message message = new Message(user.getUserID(), currentRoom.getRoomId(), currentRoom.getMulticastIp(),
-                                        content, vectorClock, null);
+                                        content, vectorClock, currentRoom.getParticipants());
             if (vectorClock.isClockLocallyUpdated(message.getVectorClock().getClock())) {
                 connection.sendMulticastMessage(message, currentRoom.getMulticastIp());
                 System.out.println("Message sent to the room with ID: " + currentRoom.getRoomId());
-                vectorClock.printVectorClock();
+                printVectorclock();
             } else {
                 System.out.println("Cannot send message: local clock is not updated correctly.");
             }
@@ -231,5 +231,8 @@ public class Node {
 
     public VectorClock getVectorClock() {
         return vectorClock;
+    }
+    public void printVectorclock(){
+        vectorClock.printVectorClock(currentRoom.getParticipants());
     }
 }

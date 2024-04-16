@@ -100,7 +100,7 @@ public class Connection {
     }
 
     // Method to listen for multicast messages
-    public void listenForMulticastMessages(ChatRoom room, User user, Node node) {
+    public void listenForMulticastMessages(User user, Node node) {
         new Thread(() -> {
             isBroadcastListenerRunning = true;
             while (node.isRunning() && isBroadcastListenerRunning) {
@@ -127,9 +127,9 @@ public class Connection {
 
                             // If the loop completes without finding a greater timestamp, update the vector clock and print the message
                             node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
-                            message.getVectorClock().printVectorClock();
+                            message.getVectorClock().printVectorClock(node.getCurrentRoom().getParticipants());
                         }
-                        System.out.println(message.getUserID() + ": " + message.getContent());
+                        System.out.println(knownUsers.get(message.getUserID()).getUsername() + ": " + message.getContent());
                     }
                 } catch (SocketException e) {
                     if (isBroadcastListenerRunning && node.isRunning()) {

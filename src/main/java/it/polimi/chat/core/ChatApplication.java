@@ -21,7 +21,8 @@ public class ChatApplication {
             System.out.println("6. Print list of known users");
             System.out.println("7. Print vector clock");
             System.out.println("8. Leave room");
-            System.out.println("9. Shut down the application");
+            System.out.println("9. Print your UserId");
+            System.out.println("10. Shut down the application");
             System.out.print("Choose an option: ");
 
             int option = scanner.nextInt();
@@ -38,7 +39,11 @@ public class ChatApplication {
                         System.out.print("Enter participant usernames (comma-separated): ");
                         String participantNamesInput = scanner.nextLine();
                         participantUsernames.addAll(Arrays.asList(participantNamesInput.split(",")));
-                    }while(participantUsernames.isEmpty()||participantUsernames.contains(user.getUsername()));
+                        if (participantUsernames.isEmpty()||participantUsernames.contains(user.getUsername())){
+                            participantUsernames.clear();
+                            System.out.print("You cant invite someone with your same username");
+                        }
+                    }while(participantUsernames.isEmpty());
                     for (String participant : participantUsernames) {
                         List<String> temp= (node.getConnection().getUsernameToId().get(participant));
                         if (temp.size()==1){
@@ -46,7 +51,7 @@ public class ChatApplication {
                         } else {
                             System.out.println("There is more than one UserIds associated to the Username, select which UID is the correct one:");
                             for (int i=0;i<temp.size();i++){
-                                System.out.println(i+". "+temp.get(i)+"\n");
+                                System.out.println(i+". "+temp.get(i));
                             }
                             int i=scanner.nextInt();
                             participantUIds.add(temp.get(i));
@@ -70,7 +75,7 @@ public class ChatApplication {
                             }
                         }
                         else {
-                            System.out.println("You are already a member of the room with ID: " + node.getCurrentRoom());
+                            System.out.println("You are already a member of the room with ID: " + node.getCurrentRoom().getRoomId());
                         }
                     } else {
                         System.out.println("Room with ID " + joinRoomId + " not found.");
@@ -102,7 +107,7 @@ public class ChatApplication {
                         System.out.println("You don't have a vector clock");
                         break;
                     }
-                    node.getVectorClock().printVectorClock();
+                    node.printVectorclock();
                     break;
                 case 8:
                     if (node.getCurrentRoom() == null) {
@@ -112,6 +117,9 @@ public class ChatApplication {
                     node.leaveRoom(node.getCurrentRoom());
                     break;
                 case 9:
+                    System.out.print("Here is your user id: "+user.getUserID());
+                    break;
+                case 10:
                     node.shutdown();
                     System.exit(0);
             }
