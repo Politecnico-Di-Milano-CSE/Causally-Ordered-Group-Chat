@@ -1,5 +1,5 @@
 Project Requirements and Areas for Improvement
-Implementation Requirements
+Implementation Requirements that have to be done
 1. Participant Management in Rooms:
 - We need to implement a functionality in order to register the users in the Rooms, so that
   is possible to retrieve how many users are connected in the current room, the userId of the 
