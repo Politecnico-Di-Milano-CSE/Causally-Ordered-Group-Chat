@@ -37,20 +37,20 @@ public class Node {
 
         // Start listening for multicast and broadcast messages
         connection.listenForMulticastMessages(this.currentRoom, this.user, this);
-        connection.listenForBroadcastMessages(this.roomRegistry, this.user, this);
+        connection.listenForDatagramMessages(this.roomRegistry, this.user, this);
 
         startHeartbeatMessages();
 
     }
 
     private void startHeartbeatMessages() {
-        scheduler.scheduleAtFixedRate(this::sendHeartbeatMessage, 5, 5, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::sendHeartbeatMessage, 1, 1, TimeUnit.SECONDS);
     }
 
     private void sendHeartbeatMessage() {
         Message heartbeatMessage = new Message(user.getUserID(), null, null, user.getUsername(),
                                             null, null);
-        connection.sendBroadcastMessage(heartbeatMessage);
+        connection.sendDatagramMessage(heartbeatMessage);
     }
 
     // Method to create a new room
@@ -74,7 +74,7 @@ public class Node {
         System.out.println("Room created!");
         vectorClock.printVectorClock();
 
-        connection.sendBroadcastMessage(message); // Broadcast the announcement
+        connection.sendDatagramMessage(message); // Broadcast the announcement
 
         return room; // Return the newly created room
     }
@@ -214,6 +214,7 @@ public class Node {
         }
 
         connection.closeMulticastSocket();
+        connection.closeDatagramSocket();
         connection.stopBroadcastListener();
         scheduler.shutdown();
     }

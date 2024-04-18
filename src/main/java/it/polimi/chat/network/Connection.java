@@ -6,10 +6,7 @@ import it.polimi.chat.core.User;
 import it.polimi.chat.dto.Message;
 
 import java.io.*;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
-import java.net.SocketException;
+import java.net.*;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
@@ -17,7 +14,8 @@ import java.util.HashMap;
 public class Connection {
     // Constants for the multicast and broadcast ports
     private static final int MULTICAST_PORT = 1234;
-    private static final int BROADCAST_PORT = 1235;
+    private static final int DATAGRAM_PORT = 1235;
+    private static final String DATAGRAM_IP = "192.168.79.52";
 
     // Index for the next multicast IP to use
     public static int nextIpIndex = 0;
@@ -25,10 +23,9 @@ public class Connection {
     public static final String[] MULTICAST_IPS = { "224.0.0.1", "224.0.0.2", "224.0.0.3" };
 
     // Flag to indicate if the broadcast listener is running
-    private volatile boolean isBroadcastListenerRunning;
-    // Multicast and broadcast sockets
+    private volatile boolean isDatagramListenerRunning;    // Multicast and broadcast sockets
     private MulticastSocket multicastSocket;
-    private MulticastSocket broadcastSocket;
+    private DatagramSocket datagramSocket;
     private Map<String, User> knownUsers;
 
 
@@ -37,25 +34,25 @@ public class Connection {
         try {
             // Initialize the multicast and broadcast sockets
             this.multicastSocket = new MulticastSocket(MULTICAST_PORT);
-            this.broadcastSocket = new MulticastSocket(BROADCAST_PORT);
+            this.datagramSocket = new DatagramSocket(new InetSocketAddress(DATAGRAM_IP, DATAGRAM_PORT));
+            this.datagramSocket.setBroadcast(true);
             // Enable broadcasting on the broadcast socket
-            this.broadcastSocket.setBroadcast(true);
-            this.isBroadcastListenerRunning = false;
+            this.isDatagramListenerRunning = false;
             this.knownUsers = new HashMap<>();
 
         } catch (Exception e) {
             e.printStackTrace();
         }
         // Set the broadcast listener as running
-        this.isBroadcastListenerRunning = true;
+        this.isDatagramListenerRunning = true;
     }
 
     // Method to stop the broadcast listener
     public void stopBroadcastListener() {
         // Set the flag to false to stop the listener threads
-        isBroadcastListenerRunning = false;
+        isDatagramListenerRunning = false;
         // Close the sockets to interrupt any blocking calls
-        broadcastSocket.close();
+        datagramSocket.close();
     }
 
     // Method to send a multicast message
@@ -79,7 +76,7 @@ public class Connection {
     }
 
     // Method to send a broadcast message
-    public void sendBroadcastMessage(Message message) {
+    public void sendDatagramMessage(Message message) {
         try {
             // Serialize the Message object to a byte array
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -88,13 +85,13 @@ public class Connection {
             byte[] buffer = baos.toByteArray();
 
             // Get the broadcast address
-            InetAddress address = InetAddress.getByName("255.255.255.255");
+            InetAddress address = InetAddress.getByName("192.168.79.255");
 
             // Create a datagram packet with the serialized object, broadcast address, and port
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, BROADCAST_PORT);
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, DATAGRAM_PORT);
 
             // Send the packet
-            broadcastSocket.send(packet);
+            datagramSocket.send(packet);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -103,8 +100,8 @@ public class Connection {
     // Method to listen for multicast messages
     public void listenForMulticastMessages(ChatRoom room, User user, Node node) {
         new Thread(() -> {
-            isBroadcastListenerRunning = true;
-            while (node.isRunning() && isBroadcastListenerRunning) {
+            isDatagramListenerRunning = true;
+            while (node.isRunning() && isDatagramListenerRunning) {
                 try {
                     byte[] buffer = new byte[1024];
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
@@ -133,7 +130,7 @@ public class Connection {
                         System.out.println(message.getUserID() + ": " + message.getContent());
                     }
                 } catch (SocketException e) {
-                    if (isBroadcastListenerRunning && node.isRunning()) {
+                    if (isDatagramListenerRunning && node.isRunning()) {
                         e.printStackTrace();
                     }
                     break;
@@ -141,7 +138,7 @@ public class Connection {
                     e.printStackTrace();
                 }
             }
-            isBroadcastListenerRunning = false;
+            isDatagramListenerRunning = false;
         }).start();
     }
 
@@ -170,18 +167,18 @@ public class Connection {
     }
 
     // Method to listen for broadcast messages
-    public void listenForBroadcastMessages(RoomRegistry roomRegistry, User user, Node node) {
+    public void listenForDatagramMessages(RoomRegistry roomRegistry, User user, Node node) {
         new Thread(() -> {
             // Set the flag to true when the listener starts
-            isBroadcastListenerRunning = true;
-            while (node.isRunning() && isBroadcastListenerRunning) {
+            isDatagramListenerRunning = true;
+            while (node.isRunning() && isDatagramListenerRunning) {
                 try {
                     // Create a buffer for incoming data
                     byte[] buffer = new byte[1024];
                     // Create a datagram packet for incoming packets
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     // Receive a packet
-                    broadcastSocket.receive(packet);
+                    datagramSocket.receive(packet);
 
                     // Deserialize the received object
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
@@ -196,7 +193,7 @@ public class Connection {
                         processRoomCreationMessage(message, roomRegistry, user);
                     }
                 } catch (SocketException e) {
-                    if (isBroadcastListenerRunning && node.isRunning()) {
+                    if (isDatagramListenerRunning && node.isRunning()) {
                         e.printStackTrace();
                     }
                     break;
@@ -205,7 +202,7 @@ public class Connection {
                 }
             }
             // Set the flag to false when the listener ends
-            isBroadcastListenerRunning = false;
+            isDatagramListenerRunning = false;
         }).start();
     }
 
@@ -233,6 +230,10 @@ public class Connection {
 
     public MulticastSocket getMulticastSocket() {
         return multicastSocket;
+    }
+
+    public void closeDatagramSocket() {
+        datagramSocket.close();
     }
 
     public void closeMulticastSocket() {

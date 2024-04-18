@@ -1,7 +1,6 @@
 package it.polimi.chat.core;
 
 import it.polimi.chat.network.Node;
-
 import java.util.Scanner;
 import java.util.Set;
 import java.util.HashSet;
