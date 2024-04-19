@@ -24,7 +24,7 @@ public class Node {
     private ChatRoom currentRoom; // The current room this node is in
     private boolean isRunning; // Whether this node is running or not
     private static final int MULTICAST_PORT = 1234; // replace with your actual multicast port
-    private ScheduledExecutorService scheduler;
+    private ScheduledExecutorService scheduler, roomScheduler;
     private VectorClock vectorClock;
 
 
@@ -35,7 +35,7 @@ public class Node {
         this.roomRegistry = new RoomRegistry(); // Initialize the room registry
         this.isRunning = true; // Set the node as running
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
-
+        this.roomScheduler = Executors.newSingleThreadScheduledExecutor();
 
         // Start listening for multicast and broadcast messages
         connection.listenForMulticastMessages( this.user, this);
@@ -52,7 +52,15 @@ public class Node {
     private void sendHeartbeatMessage() {
         Message heartbeatMessage = new Message(user.getUserID(), null, null, user.getUsername(),
                                             null, null);
-        connection.sendBroadcastMessage(heartbeatMessage);
+        connection.sendDatagramMessage(heartbeatMessage);
+    }
+    private void startRoomHeartbeatMessages() {
+        roomScheduler.scheduleAtFixedRate(this::sendRoomHeartbeatMessage, 5, 5, TimeUnit.SECONDS);
+    }
+    private void sendRoomHeartbeatMessage() {
+        Message heartbeatMessage = new Message(user.getUserID(), currentRoom.getRoomId(), currentRoom.getMulticastIp(), "Heartbeat of:"+currentRoom.getRoomId(),
+                null, currentRoom.getParticipants());
+        connection.sendDatagramMessage(heartbeatMessage);
     }
 
     // Method to create a new room
@@ -77,7 +85,7 @@ public class Node {
         System.out.println("Room created!");
         printVectorclock();
 
-        connection.sendBroadcastMessage(message); // Broadcast the announcement
+        connection.sendDatagramMessage(message); // Broadcast the announcement
 
         return room; // Return the newly created room
     }
