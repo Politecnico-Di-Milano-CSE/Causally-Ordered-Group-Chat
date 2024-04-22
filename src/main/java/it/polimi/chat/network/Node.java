@@ -86,7 +86,7 @@ public class Node {
         printVectorclock();
 
         connection.sendDatagramMessage(message); // Broadcast the announcement
-
+        startRoomHeartbeatMessages();
         return room; // Return the newly created room
     }
 
@@ -116,6 +116,7 @@ public class Node {
             System.out.println("Joined the room with ID: " + currentRoom.getRoomId());
             user.getRooms().add(room); // Add the room to the user's list of rooms
             vectorClock = new VectorClock(room.getParticipantUserId());
+            startRoomHeartbeatMessages();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -129,7 +130,7 @@ public class Node {
             connection.getMulticastSocket().leaveGroup(new InetSocketAddress(group, MULTICAST_PORT), networkInterface);
 
             currentRoom = null; // Set the current room to null
-
+            roomScheduler.shutdown();
             System.out.println("You left the room " + room.getRoomId() + "."); // Print a message
         } catch (Exception e) {
             e.printStackTrace(); // Print any exceptions
