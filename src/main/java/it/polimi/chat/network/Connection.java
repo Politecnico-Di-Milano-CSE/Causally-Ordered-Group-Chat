@@ -12,8 +12,8 @@ import java.util.*;
 
 public class Connection {
     // Constants for the multicast and broadcast ports
-    private static final int MULTICAST_PORT = 1234;
-    private static final int DATAGRAM_PORT = 1235;
+    private static final int MULTICAST_PORT = 1237;
+    private static final int DATAGRAM_PORT = 1238;
     private static final String DATAGRAM_IP = "192.168.1.6";
 
     // Index for the next multicast IP to use
@@ -159,10 +159,11 @@ public class Connection {
                 ChatRoom room = new ChatRoom(roomId, multicastIp, creatorUserId, participants);
                 // Register the room
                 roomRegistry.registerRoom(room);
+                // prints the message of either room creation or room heartbeat of once they register inside
+                System.out.println(content);
             }
 
-            // Print a message
-            System.out.println(content);
+
         } else {
             // Print the received broadcast message
             System.out.println("Broadcast message received: " + message.getContent());
