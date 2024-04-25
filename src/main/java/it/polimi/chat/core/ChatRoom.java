@@ -1,18 +1,17 @@
 package it.polimi.chat.core;
 
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.commons.collections4.BidiMap;
 
 public class ChatRoom {
     private String roomId;
     private String uniqueId;
     private String multicastIp;
     private String creatorUserId;
-    private Set<String> participants;
+    private BidiMap <String,String> participants;  //<userId,Username>
 
-
-    public ChatRoom(String roomId, String multicastIp, String creatorUserId, Set<String> participants) {
+    public ChatRoom(String roomId, String multicastIp, String creatorUserId, BidiMap <String,String> participants) {
         this.roomId = roomId;
         this.uniqueId = UUID.randomUUID().toString();
         this.multicastIp = multicastIp;
@@ -36,12 +35,21 @@ public class ChatRoom {
         return creatorUserId;
     }
 
-    public Set<String> getParticipants() {
+    public BidiMap<String, String> getParticipants() {
         return participants;
     }
+    public Set<String> getAllParticipantUsername() {
+        return participants.values();
+    }
+    public Set<String> getParticipantUserId() {
+        return participants.keySet();
+    }
+    public String getParticipantUserId(String username) {
+        return participants.get(username);
+    }
 
-    public void addParticipant(String username){
-        this.participants.add(username);
+    public void addParticipant(String userId, String username ){
+        this.participants.put(userId,username);
     }
 
 }

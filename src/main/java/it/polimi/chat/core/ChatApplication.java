@@ -1,11 +1,9 @@
 package it.polimi.chat.core;
 
+import it.polimi.chat.network.Connection;
 import it.polimi.chat.network.Node;
 
-import java.util.Scanner;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Arrays;
+import java.util.*;
 
 public class ChatApplication {
     public static void main(String[] args) {
@@ -14,7 +12,6 @@ public class ChatApplication {
         String username = scanner.nextLine();
         User user = new User(username);
         Node node = new Node(user);
-
         while (true) {
             System.out.println("1. Create a room");
             System.out.println("2. Join a room");
@@ -24,7 +21,8 @@ public class ChatApplication {
             System.out.println("6. Print list of known users");
             System.out.println("7. Print vector clock");
             System.out.println("8. Leave room");
-            System.out.println("9. Shut down the application");
+            System.out.println("9. Print your UserId");
+            System.out.println("10. Shut down the application");
             System.out.print("Choose an option: ");
 
             int option = scanner.nextInt();
@@ -32,12 +30,35 @@ public class ChatApplication {
 
             switch (option) {
                 case 1:
-                    System.out.print("Enter the room ID: ");
-                    String roomId = scanner.nextLine();
-                    System.out.print("Enter participant usernames (comma-separated): ");
-                    String participantNamesInput = scanner.nextLine();
-                    Set<String> participantUsernames = new HashSet<>(Arrays.asList(participantNamesInput.split(",")));
-                    ChatRoom createdRoom = node.createRoom(roomId, participantUsernames);
+                    Set<String> participantUsernames = new HashSet<>();
+                    String roomId;
+                    Set<String> participantUIds = new HashSet<>();
+                    do {
+                        System.out.print("Enter the room ID: ");
+                        roomId = scanner.nextLine();
+                        System.out.print("Enter participant usernames (comma-separated): ");
+                        String participantNamesInput = scanner.nextLine();
+                        participantUsernames.addAll(Arrays.asList(participantNamesInput.split(",")));
+                        if (participantUsernames.isEmpty()||participantUsernames.contains(user.getUsername())){
+                            participantUsernames.clear();
+                            System.out.print("You cant invite someone with your same username");
+                        }
+                    }while(participantUsernames.isEmpty());
+                    for (String participant : participantUsernames) {
+                        List<String> temp= (node.getConnection().getUsernameToId().get(participant));
+                        if (temp.size()==1){
+                            participantUIds.add(temp.get(0));
+                        } else {
+                            System.out.println("There is more than one UserIds associated to the Username, select which UID is the correct one:");
+                            for (int i=0;i<temp.size();i++){
+                                System.out.println(i+". "+temp.get(i));
+                            }
+                            int i=scanner.nextInt();
+                            participantUIds.add(temp.get(i));
+
+                        }
+                    }
+                    ChatRoom createdRoom = node.createRoom(roomId, participantUIds);
                     System.out.println("Room created with ID: " + createdRoom.getRoomId() + " and multicast IP address: "
                             + createdRoom.getMulticastIp() + ", Participants: " + participantUsernames);
                     break;
@@ -54,7 +75,7 @@ public class ChatApplication {
                             }
                         }
                         else {
-                            System.out.println("You are already a member of the room with ID: " + node.getCurrentRoom());
+                            System.out.println("You are already a member of the room with ID: " + node.getCurrentRoom().getRoomId());
                         }
                     } else {
                         System.out.println("Room with ID " + joinRoomId + " not found.");
@@ -86,7 +107,7 @@ public class ChatApplication {
                         System.out.println("You don't have a vector clock");
                         break;
                     }
-                    node.getVectorClock().printVectorClock();
+                    node.printVectorclock();
                     break;
                 case 8:
                     if (node.getCurrentRoom() == null) {
@@ -96,6 +117,9 @@ public class ChatApplication {
                     node.leaveRoom(node.getCurrentRoom());
                     break;
                 case 9:
+                    System.out.print("Here is your user id: "+user.getUserID());
+                    break;
+                case 10:
                     node.shutdown();
                     System.exit(0);
             }
