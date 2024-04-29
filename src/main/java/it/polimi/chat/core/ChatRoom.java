@@ -1,10 +1,11 @@
 package it.polimi.chat.core;
 
+import java.io.Serializable;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.commons.collections4.BidiMap;
 
-public class ChatRoom {
+public class ChatRoom implements Serializable {
     private String roomId;
     private String uniqueId;
     private String multicastIp;
