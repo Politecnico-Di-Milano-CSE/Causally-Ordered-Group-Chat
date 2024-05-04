@@ -370,10 +370,6 @@ public class Connection {
         }
     }
 
-    private int bytesToInt(short value) {
-        return value & 0xFFFF;
-    }
-
     private String intToIp(int value) {
         return ((value >> 24) & 0xFF) + "." +
                 ((value >> 16) & 0xFF) + "." +
