@@ -23,14 +23,17 @@ public class Connection {
     private Map<String, User> knownUsers;
     //Maps username to all the userIds known for that username
     private Map<String, List<String>> usernameToId;
+    private String localIpAddress;
+    private String broadcastAddress;
 
     // Constructor
     public Connection() {
         try {
             // Initialize the multicast and broadcast sockets
-            String ipAddress = getLocalIPAddress();
+            localIpAddress = getLocalIPAddress();
+            this.broadcastAddress = getBroadcastAddress(localIpAddress);
             this.multicastSocket = new MulticastSocket(MULTICAST_PORT);
-            this.datagramSocket = new DatagramSocket(new InetSocketAddress(ipAddress, DATAGRAM_PORT));
+            this.datagramSocket = new DatagramSocket(new InetSocketAddress(localIpAddress, DATAGRAM_PORT));
             // Enable broadcasting on the broadcast socket
             this.datagramSocket.setBroadcast(true);
             this.isDatagramListenerRunning = false;
@@ -80,11 +83,8 @@ public class Connection {
             oos.writeObject(message);
             byte[] buffer = baos.toByteArray();
 
-            // Get the broadcast address
-            InetAddress address = InetAddress.getByName("255.255.255.255");
-
             // Create a datagram packet with the serialized object, broadcast address, and port
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, DATAGRAM_PORT);
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(broadcastAddress), DATAGRAM_PORT);
 
             // Send the packet
             datagramSocket.send(packet);
@@ -315,6 +315,7 @@ public class Connection {
                 NetworkInterface networkInterface = interfaces.nextElement();
                 if (!networkInterface.isLoopback() && networkInterface.isUp() &&
                     !networkInterface.getDisplayName().contains("VMware") &&
+                    !networkInterface.getDisplayName().contains("Ethernet") &&
                     !networkInterface.getDisplayName().contains("Box")) {
 
                     Enumeration<InetAddress> inetAddresses = networkInterface.getInetAddresses();
@@ -331,5 +332,55 @@ public class Connection {
         }
         return null;
     }
+
+    public String getBroadcastAddress(String localIPAddress) throws SocketException {
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface networkInterface = interfaces.nextElement();
+            if (!networkInterface.isLoopback() && networkInterface.isUp() &&
+                    !networkInterface.getDisplayName().contains("VMware") &&
+                    !networkInterface.getDisplayName().contains("Box")) {
+
+                List<InterfaceAddress> interfaceAddresses = networkInterface.getInterfaceAddresses();
+                for (InterfaceAddress interfaceAddress : interfaceAddresses) {
+                    InetAddress address = interfaceAddress.getAddress();
+                    if (address.getHostAddress().equals(localIPAddress)) {
+                        int ipAddress = bytesToInt(address.getAddress());
+                        int subnet = bytesToInt(interfaceAddress.getNetworkPrefixLength());
+                        int broadcast = ipAddress | ~(~0 << (32 - subnet));
+                        return intToIp(broadcast);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private int bytesToInt(Object obj) {
+        if (obj instanceof byte[]) {
+            int value = 0;
+            for (byte b : (byte[]) obj) {
+                value = (value << 8) + (b & 0xff);
+            }
+            return value;
+        } else if (obj instanceof Short) {
+            return (Short) obj & 0xFFFF;
+        } else {
+            throw new IllegalArgumentException("Unsupported type: " + obj.getClass().getName());
+        }
+    }
+
+    private int bytesToInt(short value) {
+        return value & 0xFFFF;
+    }
+
+    private String intToIp(int value) {
+        return ((value >> 24) & 0xFF) + "." +
+                ((value >> 16) & 0xFF) + "." +
+                ((value >> 8) & 0xFF) + "." +
+                (value & 0xFF);
+    }
+
+
 
 }
