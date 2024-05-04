@@ -1,15 +1,13 @@
 Project Requirements and Areas for Improvement
 Implementation Requirements that have to be done
-1. Participant Management in Rooms:
-- introduce a way to create Multicast ips dynamically
-2. Message Posting and Causal Delivery:
+1. Message Posting and Causal Delivery:
 - We need to implement a mechanism that allows "delayed" messages to be sent to unsynchronized users
 - A log to store the messages send and arrived so that we may synchronize any user
-3. Handling Disconnections and Reconnections:
+2. Handling Disconnections and Reconnections:
 - We need to implement a strategy for handling user disconnections and reconnections to ensure
   high availability. This could include caching messages locally when a user is disconnected and
   synchronizing missed messages upon reconnection in a way that respects causal ordering.
-4. Simulation or Real Distributed Application:
+3. Simulation or Real Distributed Application:
 - We need to decide whether to simulate the network behavior using OmNet++ or implement it as
   a real distributed application. If the latter, we need to ensure that our network communication code
   is robust and efficient for a P2P environment.

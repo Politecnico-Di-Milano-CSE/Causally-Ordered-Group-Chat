@@ -12,14 +12,8 @@ import java.util.*;
 
 public class Connection {
     // Constants for the multicast and broadcast ports
-    private static final int MULTICAST_PORT = 1237;
-    private static final int DATAGRAM_PORT = 1238;
-    private static final String DATAGRAM_IP = "192.168.1.6";
-
-    // Index for the next multicast IP to use
-    public static int nextIpIndex = 0;
-    // Array of multicast IPs
-    public static final String[] MULTICAST_IPS = { "224.0.0.10", "224.0.0.11", "224.0.0.12" };
+    private static final int MULTICAST_PORT = 49152;
+    private static final int DATAGRAM_PORT = 49153;
 
     // Flag to indicate if the broadcast listener is running
     private volatile boolean isDatagramListenerRunning;
@@ -27,15 +21,19 @@ public class Connection {
     private MulticastSocket multicastSocket;
     private DatagramSocket datagramSocket;
     private Map<String, User> knownUsers;
-    //Maps username to all of the userIds known for that username
+    //Maps username to all the userIds known for that username
     private Map<String, List<String>> usernameToId;
+    private String localIpAddress;
+    private String broadcastAddress;
 
     // Constructor
     public Connection() {
         try {
             // Initialize the multicast and broadcast sockets
+            localIpAddress = getLocalIPAddress();
+            this.broadcastAddress = getBroadcastAddress(localIpAddress);
             this.multicastSocket = new MulticastSocket(MULTICAST_PORT);
-            this.datagramSocket = new DatagramSocket(new InetSocketAddress(DATAGRAM_IP, DATAGRAM_PORT));
+            this.datagramSocket = new DatagramSocket(new InetSocketAddress(localIpAddress, DATAGRAM_PORT));
             // Enable broadcasting on the broadcast socket
             this.datagramSocket.setBroadcast(true);
             this.isDatagramListenerRunning = false;
@@ -85,11 +83,8 @@ public class Connection {
             oos.writeObject(message);
             byte[] buffer = baos.toByteArray();
 
-            // Get the broadcast address
-            InetAddress address = InetAddress.getByName("192.168.1.255");
-
             // Create a datagram packet with the serialized object, broadcast address, and port
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, DATAGRAM_PORT);
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(broadcastAddress), DATAGRAM_PORT);
 
             // Send the packet
             datagramSocket.send(packet);
@@ -104,7 +99,7 @@ public class Connection {
             isDatagramListenerRunning = true;
             while (node.isRunning() && isDatagramListenerRunning) {
                 try {
-                    byte[] buffer = new byte[1024];
+                    byte[] buffer = new byte[2048];
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     multicastSocket.receive(packet);
 
@@ -126,7 +121,7 @@ public class Connection {
 
                             // If the loop completes without finding a greater timestamp, update the vector clock and print the message
                             node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
-                            message.getVectorClock().printVectorClock(node.getCurrentRoom().getParticipants());
+                            //message.getVectorClock().printVectorClock(node.getCurrentRoom().getParticipants());
                         }
                         System.out.println(knownUsers.get(message.getUserID()).getUsername() + ": " + message.getContent());
                     }
@@ -178,7 +173,7 @@ public class Connection {
             while (node.isRunning() && isDatagramListenerRunning) {
                 try {
                     // Create a buffer for incoming data
-                    byte[] buffer = new byte[1024];
+                    byte[] buffer = new byte[2048];
                     // Create a datagram packet for incoming packets
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     // Receive a packet
@@ -191,8 +186,23 @@ public class Connection {
 
                     // Process the message
                     if (message.getRoomId() == null && message.getMulticastIp() == null) {
-                        // It's a heartbeat message, update the known users
+                        // It's a user heartbeat message, update the known users
                         updateKnownUser(message.getUserID(), message.getContent());
+                        if (!message.getRoomRegistry().getRooms().isEmpty()){
+                            // It's a room heartbeat message, update the known rooms
+                            for (ChatRoom room : message.getRoomRegistry().getRooms().values()) {
+                                if (!node.getRoomRegistry().getRooms().containsKey(room.getRoomId())){
+                                    String roomId = room.getRoomId();
+                                    String multicastIp = room.getMulticastIp();
+                                    String userId = message.getUserID();
+                                    BidiMap<String,String> participants = room.getParticipants();
+
+                                    ChatRoom updatedRoom = new ChatRoom(roomId, multicastIp, userId, participants);
+                                    node.getRoomRegistry().registerRoom(updatedRoom);
+                                    System.out.println("New room updated: " + updatedRoom.getRoomId());
+                                }
+                            }
+                        }
                     } else {
                         processRoomCreationMessage(message, roomRegistry, user);
                     }
@@ -201,6 +211,10 @@ public class Connection {
                         e.printStackTrace();
                     }
                     break;
+
+                } catch (EOFException e) {
+                    System.err.println("Deserialization error: " + e.getMessage());
+                    e.printStackTrace();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -222,12 +236,6 @@ public class Connection {
                 usernameToId.get(username).add(userId);
             } else{
                 usernameToId.get(username).add(userId);
-            }
-        } else {
-            User existingUser = knownUsers.get(userId);
-            if (!existingUser.getUsername().equals(username)) {
-                existingUser.setUsername(username);
-                System.out.println("Known user updated: " + username);
             }
         }
     }
@@ -251,10 +259,124 @@ public class Connection {
         return knownUsers;
     }
 
-    public void setKnownUsers(Map<String, User> knownUsers) {
-        this.knownUsers = knownUsers;
-    }
     public Map <String, List<String>> getUsernameToId() {
         return usernameToId;
     }
+
+    public String generateMulticastIp(RoomRegistry roomRegistry) {
+        InetAddress randomAddress = null;
+        try {
+            Random rand = new Random();
+            byte[] randomIp = new byte[4];
+
+            boolean found = false;
+            while (!found) {
+                // First three octets are fixed
+                randomIp[0] = (byte) 224;
+                randomIp[1] = (byte) 0;
+                randomIp[2] = (byte) 0;
+
+                // Randomize the last octet between 19 and 254 included
+                randomIp[3] = (byte) (rand.nextInt(236) + 19);
+
+                randomAddress = InetAddress.getByAddress(randomIp);
+
+                // Verify if the IP is available
+                if (isAddressAvailable(randomAddress, roomRegistry)) {
+                    System.out.println("The multicast IP generated can be used: " + randomAddress.getHostAddress());
+                    found = true;
+                } else {
+                    System.out.println("The multicast IP generated is already in use: " + randomAddress.getHostAddress());
+                }
+            }
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
+        assert randomAddress != null;
+        return randomAddress.getHostAddress();
+    }
+
+    private boolean isAddressAvailable(InetAddress address, RoomRegistry roomRegistry) {
+        boolean isContained = true;
+        for (ChatRoom room : roomRegistry.getRooms().values()) {
+            if (room.getMulticastIp().equals(address.getHostAddress())) {
+                isContained = false;
+                break;
+            }
+        }
+        return isContained;
+    }
+
+    public String getLocalIPAddress() {
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface networkInterface = interfaces.nextElement();
+                if (!networkInterface.isLoopback() && networkInterface.isUp() &&
+                    !networkInterface.getDisplayName().contains("VMware") &&
+                    !networkInterface.getDisplayName().contains("Ethernet") &&
+                    !networkInterface.getDisplayName().contains("Box")) {
+
+                    Enumeration<InetAddress> inetAddresses = networkInterface.getInetAddresses();
+                    while (inetAddresses.hasMoreElements()) {
+                        InetAddress inetAddress = inetAddresses.nextElement();
+                        if (inetAddress.isSiteLocalAddress()) {
+                            return inetAddress.getHostAddress();
+                        }
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public String getBroadcastAddress(String localIPAddress) throws SocketException {
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface networkInterface = interfaces.nextElement();
+            if (!networkInterface.isLoopback() && networkInterface.isUp() &&
+                    !networkInterface.getDisplayName().contains("VMware") &&
+                    !networkInterface.getDisplayName().contains("Box")) {
+
+                List<InterfaceAddress> interfaceAddresses = networkInterface.getInterfaceAddresses();
+                for (InterfaceAddress interfaceAddress : interfaceAddresses) {
+                    InetAddress address = interfaceAddress.getAddress();
+                    if (address.getHostAddress().equals(localIPAddress)) {
+                        int ipAddress = bytesToInt(address.getAddress());
+                        int subnet = bytesToInt(interfaceAddress.getNetworkPrefixLength());
+                        int broadcast = ipAddress | ~(~0 << (32 - subnet));
+                        return intToIp(broadcast);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private int bytesToInt(Object obj) {
+        if (obj instanceof byte[]) {
+            int value = 0;
+            for (byte b : (byte[]) obj) {
+                value = (value << 8) + (b & 0xff);
+            }
+            return value;
+        } else if (obj instanceof Short) {
+            return (Short) obj & 0xFFFF;
+        } else {
+            throw new IllegalArgumentException("Unsupported type: " + obj.getClass().getName());
+        }
+    }
+
+    private String intToIp(int value) {
+        return ((value >> 24) & 0xFF) + "." +
+                ((value >> 16) & 0xFF) + "." +
+                ((value >> 8) & 0xFF) + "." +
+                (value & 0xFF);
+    }
+
+
+
 }

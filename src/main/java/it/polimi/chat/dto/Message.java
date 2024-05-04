@@ -2,6 +2,8 @@ package it.polimi.chat.dto;
 
 import java.io.Serializable;
 import java.util.Set;
+
+import it.polimi.chat.core.RoomRegistry;
 import org.apache.commons.collections4.BidiMap;
 
 public class Message implements Serializable {
@@ -13,8 +15,9 @@ public class Message implements Serializable {
     private VectorClock vectorClock;
     private BidiMap <String,String> participants;
     //contains the userids and username of the participants
+    private RoomRegistry roomRegistry;
 
-    public Message(String userID, String roomId, String multicastIp, String content, VectorClock vectorClock, BidiMap<String,String> participants) {
+    public Message(String userID, String roomId, String multicastIp, String content, VectorClock vectorClock, BidiMap<String,String> participants, RoomRegistry roomRegistry) {
         this.id++;
         this.userID = userID;
         this.roomId = roomId;
@@ -22,6 +25,7 @@ public class Message implements Serializable {
         this.content = content;
         this.vectorClock = vectorClock;
         this.participants = participants;
+        this.roomRegistry = roomRegistry;
 
     }
 
@@ -79,5 +83,13 @@ public class Message implements Serializable {
 
     public void setParticipants(BidiMap<String,String> participants) {
         this.participants = participants;
+    }
+
+    public RoomRegistry getRoomRegistry() {
+        return roomRegistry;
+    }
+
+    public void setRoomRegistry(RoomRegistry roomRegistry) {
+        this.roomRegistry = roomRegistry;
     }
 }
