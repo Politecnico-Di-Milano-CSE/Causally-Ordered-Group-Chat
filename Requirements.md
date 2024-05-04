@@ -1,10 +1,12 @@
 Project Requirements and Areas for Improvement
 Implementation Requirements that have to be done
 1. Participant Management in Rooms:
-- introduce a way to create Multicast ips dynamically
+- syncrhonising room deletion over the network
+- dynamic datagram
 2. Message Posting and Causal Delivery:
 - We need to implement a mechanism that allows "delayed" messages to be sent to unsynchronized users
 - A log to store the messages send and arrived so that we may synchronize any user
+- Vectorclock heartbeat.
 3. Handling Disconnections and Reconnections:
 - We need to implement a strategy for handling user disconnections and reconnections to ensure
   high availability. This could include caching messages locally when a user is disconnected and
@@ -21,7 +23,7 @@ Implementation Requirements that have to be done
 2. Error Handling and Logging:
 - We need to improve error handling for network operations and other critical paths. Implement
   comprehensive logging for easier debugging and monitoring.
-3. Security Considerations:
+4. Security Considerations:
 - We need to implement authentication for users to ensure that only authorized users can join
   rooms and send messages. Consider encrypting messages between users to ensure privacy and
   security in communications.
@@ -36,3 +38,13 @@ Implementation Requirements that have to be done
 6. Documentation:
 - We need comprehensive documentation covering the architecture, setup, usage, and any
   assumptions made during the development process.
+
+COMPLETED
+- Adding Users 
+- a broadcast and multicast system of communication permitting the sharing of messages both in a groupchat and over the network
+- full implementation of vector clocks to peers.
+- Room creation with a set of users discovered over the network.
+- User can post messages in the room.
+- Causal ordering of the messages.
+- Multicasts ips dynamics.
+- Exception disconnections is fine.

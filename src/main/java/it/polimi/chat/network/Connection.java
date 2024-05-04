@@ -14,7 +14,7 @@ public class Connection {
     // Constants for the multicast and broadcast ports
     private static final int MULTICAST_PORT = 1237;
     private static final int DATAGRAM_PORT = 1238;
-    private static final String DATAGRAM_IP = "192.168.1.6";
+    private static final String DATAGRAM_IP = "192.168.1.10";
 
     // Index for the next multicast IP to use
     public static int nextIpIndex = 0;
