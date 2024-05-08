@@ -1,14 +1,18 @@
 package it.polimi.chat.dto;
 
+import org.apache.commons.collections4.BidiMap;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Set;
 
 public class MessageQueue  implements Serializable {
-    private ArrayList <String> participants;
+    private BidiMap<String,String> participants;
     private ArrayList <LoggedMessage> messageLog;
     private ArrayList <Integer> checkpoint;
-    public MessageQueue(ArrayList <String> participants) {
+
+    public MessageQueue(BidiMap<String,String> participants) {
         this.participants = participants;
         messageLog = new ArrayList<>();
         checkpoint = new ArrayList<>();
@@ -23,7 +27,7 @@ public class MessageQueue  implements Serializable {
 
         int i=checkpoint.size()-1;
         int j=0;
-            for(String id : participants) {
+            for(String id : participants.keySet()) {
                 if (j< message.getVectorClock().getClock().get(id)){
                     j=message.getVectorClock().getClock().get(id);
                 }//gets lowest vectorclock
@@ -40,22 +44,20 @@ public class MessageQueue  implements Serializable {
         for (j =0;j< trimmedLog.size() && i< messageLog.size();j++){
                 switch (messageLog.get(i).compareTo(trimmedLog.get(j))){
                    case 1:
-                       if (!trimmedLog.get(j).ischeckpoint){
                        messageLog.add(i,trimmedLog.get(j));
-                       i++; }else{
-                           messageLog.add(i,trimmedLog.get(j));
-                           i++;
+                       System.out.println(participants.get(trimmedLog.get(j).userid)+": " + trimmedLog.get(j).content);
+                       i++;
+                       if(trimmedLog.get(j).ischeckpoint){
                            checkpoint.add(i);
                        }
                        break;
                        case 0: if(!trimmedLog.get(i).userid.equals(trimmedLog.get(j).userid)){
-                       if(!trimmedLog.get(j).ischeckpoint){
+                           {
                            messageLog.add(i+1,trimmedLog.get(j));
-                            i++;
+                           System.out.println(participants.get(trimmedLog.get(j).userid)+": " + trimmedLog.get(j).content);
+                               i++;
                        }
-                       else{
-                           messageLog.add(i+1,trimmedLog.get(j));
-                           i++;
+                           if(trimmedLog.get(j).ischeckpoint){
                            checkpoint.add(i);
                        }
                        }

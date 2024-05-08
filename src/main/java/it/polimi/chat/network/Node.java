@@ -4,10 +4,14 @@ import it.polimi.chat.core.ChatRoom;
 import it.polimi.chat.core.RoomRegistry;
 import it.polimi.chat.core.User;
 import it.polimi.chat.dto.Message;
+import it.polimi.chat.dto.MessageQueue;
 import it.polimi.chat.dto.VectorClock;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.net.NetworkInterface;
 import java.net.InetAddress;
@@ -26,7 +30,7 @@ public class Node {
     private static final int MULTICAST_PORT = 1234; // replace with your actual multicast port
     private ScheduledExecutorService scheduler, roomScheduler;
     private VectorClock vectorClock;
-
+    private Map<String,MessageQueue> messageQueues;
 
     // Constructor
     public Node(User user) {
@@ -34,6 +38,7 @@ public class Node {
         this.connection = new Connection(); // Initialize the connection
         this.roomRegistry = new RoomRegistry(); // Initialize the room registry
         this.isRunning = true; // Set the node as running
+        messageQueues = new HashMap<String,MessageQueue>();
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
         this.roomScheduler = Executors.newSingleThreadScheduledExecutor();
 
@@ -116,6 +121,7 @@ public class Node {
             System.out.println("Joined the room with ID: " + currentRoom.getRoomId());
             user.getRooms().add(room); // Add the room to the user's list of rooms
             vectorClock = new VectorClock(room.getParticipantUserId());
+            messageQueues.put(room.getRoomId(),new MessageQueue(room.getParticipants()));
             startRoomHeartbeatMessages();
         } catch (Exception e) {
             e.printStackTrace();
@@ -160,6 +166,7 @@ public class Node {
                 connection.sendMulticastMessage(message, currentRoom.getMulticastIp());
                 System.out.println("Message sent to the room with ID: " + currentRoom.getRoomId());
                 printVectorclock();
+                messageQueues.get(currentRoom.getRoomId()).addMessageToLog(message);
             } else {
                 System.out.println("Cannot send message: local clock is not updated correctly.");
             }

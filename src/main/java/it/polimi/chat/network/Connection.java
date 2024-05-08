@@ -115,16 +115,22 @@ public class Connection {
                     if (node.getCurrentRoom() != null && node.getCurrentRoom().getRoomId().equals(message.getRoomId())) {
                         // Check if the message is from the current user
                         if (!message.getUserID().equals(user.getUserID())) {
+                            if (message.getContent()=="log needed"){
+                                System.out.println(message.getContent());
+
+                            }
                             // Check if the received vector clock has a timestamp for a different process that is greater than the local timestamp
                             for (Map.Entry<String, Integer> entry : message.getVectorClock().getClock().entrySet()) {
                                 if (!entry.getKey().equals(message.getUserID()) && entry.getValue() > node.getVectorClock().getClock().get(entry.getKey())) {
                                     // If so, hold the message and break the loop
+                                    Message msg= new Message(user.getUserID(), node.getCurrentRoom().getRoomId(), node.getCurrentRoom().getMulticastIp(), "log needed" ,node.getVectorClock(), node.getCurrentRoom().getParticipants());
+                                    sendMulticastMessage(msg, node.getCurrentRoom().getMulticastIp());
                                     System.out.println("Holding message until the message from the initial process is received.");
                                     return;
                                 }
                             }
 
-                            // If the loop completes without finding a greater timestamp, update the vector clock and print the message
+                            // If the loop completes without finding a greater timestamp, update the vector clock and print the messagx e
                             node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
                             message.getVectorClock().printVectorClock(node.getCurrentRoom().getParticipants());
                         }
