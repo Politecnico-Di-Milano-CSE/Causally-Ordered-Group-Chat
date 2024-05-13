@@ -21,7 +21,7 @@ public class Connection {
     private MulticastSocket multicastSocket;
     private DatagramSocket datagramSocket;
     private Map<String, User> knownUsers;
-    //Maps username to all the userIds known for that username
+    // Maps username to all the userIds known for that username
     private Map<String, List<String>> usernameToId;
     private String localIpAddress;
     private String broadcastAddress;
@@ -83,8 +83,10 @@ public class Connection {
             oos.writeObject(message);
             byte[] buffer = baos.toByteArray();
 
-            // Create a datagram packet with the serialized object, broadcast address, and port
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(broadcastAddress), DATAGRAM_PORT);
+            // Create a datagram packet with the serialized object, broadcast address, and
+            // port
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(broadcastAddress),
+                    DATAGRAM_PORT);
 
             // Send the packet
             datagramSocket.send(packet);
@@ -107,23 +109,29 @@ public class Connection {
                     ObjectInputStream ois = new ObjectInputStream(bais);
                     Message message = (Message) ois.readObject();
 
-                    if (node.getCurrentRoom() != null && node.getCurrentRoom().getRoomId().equals(message.getRoomId())) {
+                    if (node.getCurrentRoom() != null
+                            && node.getCurrentRoom().getRoomId().equals(message.getRoomId())) {
                         // Check if the message is from the current user
                         if (!message.getUserID().equals(user.getUserID())) {
-                            // Check if the received vector clock has a timestamp for a different process that is greater than the local timestamp
+                            // Check if the received vector clock has a timestamp for a different process
+                            // that is greater than the local timestamp
                             for (Map.Entry<String, Integer> entry : message.getVectorClock().getClock().entrySet()) {
-                                if (!entry.getKey().equals(message.getUserID()) && entry.getValue() > node.getVectorClock().getClock().get(entry.getKey())) {
+                                if (!entry.getKey().equals(message.getUserID())
+                                        && entry.getValue() > node.getVectorClock().getClock().get(entry.getKey())) {
                                     // If so, hold the message and break the loop
-                                    System.out.println("Holding message until the message from the initial process is received.");
+                                    System.out.println(
+                                            "Holding message until the message from the initial process is received.");
                                     return;
                                 }
                             }
 
-                            // If the loop completes without finding a greater timestamp, update the vector clock and print the message
+                            // If the loop completes without finding a greater timestamp, update the vector
+                            // clock and print the message
                             node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
-                            //message.getVectorClock().printVectorClock(node.getCurrentRoom().getParticipants());
+                            // message.getVectorClock().printVectorClock(node.getCurrentRoom().getParticipants());
                         }
-                        System.out.println(knownUsers.get(message.getUserID()).getUsername() + ": " + message.getContent());
+                        System.out.println(
+                                knownUsers.get(message.getUserID()).getUsername() + ": " + message.getContent());
                     }
                 } catch (SocketException e) {
                     if (isDatagramListenerRunning && node.isRunning()) {
@@ -138,7 +146,6 @@ public class Connection {
         }).start();
     }
 
-
     // Method to process a room creation message
     private void processRoomCreationMessage(Message message, RoomRegistry roomRegistry, User user) {
         // Check if the message is a room creation message
@@ -148,16 +155,16 @@ public class Connection {
             String multicastIp = message.getMulticastIp();
             String creatorUserId = message.getUserID();
             String content = message.getContent();
-            BidiMap<String,String> participants = message.getParticipants();
-            if(roomRegistry.getRoomById(roomId)==null){
+            BidiMap<String, String> participants = message.getParticipants();
+            if (roomRegistry.getRoomById(roomId) == null) {
                 // Create a new chat room with participants
                 ChatRoom room = new ChatRoom(roomId, multicastIp, creatorUserId, participants);
                 // Register the room
                 roomRegistry.registerRoom(room);
-                // prints the message of either room creation or room heartbeat of once they register inside
+                // prints the message of either room creation or room heartbeat of once they
+                // register inside
                 System.out.println(content);
             }
-
 
         } else {
             // Print the received broadcast message
@@ -188,14 +195,14 @@ public class Connection {
                     if (message.getRoomId() == null && message.getMulticastIp() == null) {
                         // It's a user heartbeat message, update the known users
                         updateKnownUser(message.getUserID(), message.getContent());
-                        if (!message.getRoomRegistry().getRooms().isEmpty()){
+                        if (!message.getRoomRegistry().getRooms().isEmpty()) {
                             // It's a room heartbeat message, update the known rooms
                             for (ChatRoom room : message.getRoomRegistry().getRooms().values()) {
-                                if (!node.getRoomRegistry().getRooms().containsKey(room.getRoomId())){
+                                if (!node.getRoomRegistry().getRooms().containsKey(room.getRoomId())) {
                                     String roomId = room.getRoomId();
                                     String multicastIp = room.getMulticastIp();
                                     String userId = message.getUserID();
-                                    BidiMap<String,String> participants = room.getParticipants();
+                                    BidiMap<String, String> participants = room.getParticipants();
 
                                     ChatRoom updatedRoom = new ChatRoom(roomId, multicastIp, userId, participants);
                                     node.getRoomRegistry().registerRoom(updatedRoom);
@@ -230,11 +237,11 @@ public class Connection {
             newUser.setUserID(userId);
             knownUsers.put(userId, newUser);
             System.out.println("New user added to known users: " + username);
-            //usernameToId is update once we see a new userid
+            // usernameToId is update once we see a new userid
             if (!usernameToId.containsKey(username)) {
                 usernameToId.put(username, new ArrayList<>());
                 usernameToId.get(username).add(userId);
-            } else{
+            } else {
                 usernameToId.get(username).add(userId);
             }
         }
@@ -259,7 +266,7 @@ public class Connection {
         return knownUsers;
     }
 
-    public Map <String, List<String>> getUsernameToId() {
+    public Map<String, List<String>> getUsernameToId() {
         return usernameToId;
     }
 
@@ -286,7 +293,8 @@ public class Connection {
                     System.out.println("The multicast IP generated can be used: " + randomAddress.getHostAddress());
                     found = true;
                 } else {
-                    System.out.println("The multicast IP generated is already in use: " + randomAddress.getHostAddress());
+                    System.out
+                            .println("The multicast IP generated is already in use: " + randomAddress.getHostAddress());
                 }
             }
         } catch (UnknownHostException e) {
@@ -314,9 +322,9 @@ public class Connection {
             while (interfaces.hasMoreElements()) {
                 NetworkInterface networkInterface = interfaces.nextElement();
                 if (!networkInterface.isLoopback() && networkInterface.isUp() &&
-                    !networkInterface.getDisplayName().contains("VMware") &&
-                    !networkInterface.getDisplayName().contains("Ethernet") &&
-                    !networkInterface.getDisplayName().contains("Box")) {
+                        !networkInterface.getDisplayName().contains("VMware") &&
+                        !networkInterface.getDisplayName().contains("Ethernet") &&
+                        !networkInterface.getDisplayName().contains("Box")) {
 
                     Enumeration<InetAddress> inetAddresses = networkInterface.getInetAddresses();
                     while (inetAddresses.hasMoreElements()) {
@@ -376,7 +384,4 @@ public class Connection {
                 ((value >> 8) & 0xFF) + "." +
                 (value & 0xFF);
     }
-
-
-
 }

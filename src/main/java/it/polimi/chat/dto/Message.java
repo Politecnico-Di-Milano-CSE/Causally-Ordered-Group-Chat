@@ -1,7 +1,7 @@
 package it.polimi.chat.dto;
 
 import java.io.Serializable;
-import java.util.Set;
+// No changes needed, remove the unused import statement for java.util.Set
 
 import it.polimi.chat.core.RoomRegistry;
 import org.apache.commons.collections4.BidiMap;

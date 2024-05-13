@@ -24,7 +24,7 @@ public class ChatApplication {
             System.out.println("4. Send a multicast message");
             System.out.println("5. Print list of known rooms");
             System.out.println("6. Print list of known users");
-            //System.out.println("7. Print vector clock");
+            // System.out.println("7. Print vector clock");
             System.out.println("7. Leave room");
             System.out.println("8. Shut down the application");
             System.out.print("Choose an option: \n");
@@ -57,7 +57,8 @@ public class ChatApplication {
                             if (temp.size() == 1) {
                                 participantUIds.add(temp.get(0));
                             } else {
-                                System.out.println("There is more than one UserIds associated to the Username, select which UID is the correct one:");
+                                System.out.println(
+                                        "There is more than one UserIds associated to the Username, select which UID is the correct one:");
                                 for (int i = 0; i < temp.size(); i++) {
                                     System.out.println(i + ". " + temp.get(i));
                                 }
@@ -71,8 +72,9 @@ public class ChatApplication {
 
                     if (!hasInvalidParticipants) {
                         ChatRoom createdRoom = node.createRoom(roomId, participantUIds);
-                        System.out.println("Room created with ID: " + createdRoom.getRoomId() + " and multicast IP address: "
-                                + createdRoom.getMulticastIp() + ", Participants: " + participantUsernames);
+                        System.out.println(
+                                "Room created with ID: " + createdRoom.getRoomId() + " and multicast IP address: "
+                                        + createdRoom.getMulticastIp() + ", Participants: " + participantUsernames);
                     } else {
                         System.out.println("Unable to create room due to invalid participants.");
                     }
@@ -82,14 +84,16 @@ public class ChatApplication {
                     String joinRoomId = scanner.nextLine();
                     ChatRoom roomToJoin = node.findRoomById(joinRoomId);
                     if (roomToJoin != null) {
-                        if (node.getCurrentRoom() == null || !node.getCurrentRoom().getRoomId().equals(roomToJoin.getRoomId())) {
+                        if (node.getCurrentRoom() == null
+                                || !node.getCurrentRoom().getRoomId().equals(roomToJoin.getRoomId())) {
                             if (user.getRooms().contains(roomToJoin)) {
                                 node.joinRoom(roomToJoin);
                             } else {
                                 node.joinRoom(roomToJoin);
                             }
                         } else {
-                            System.out.println("You are already a member of the room with ID: " + node.getCurrentRoom().getRoomId());
+                            System.out.println("You are already a member of the room with ID: "
+                                    + node.getCurrentRoom().getRoomId());
                         }
                     } else {
                         System.out.println("Room with ID " + joinRoomId + " not found.");
@@ -115,13 +119,15 @@ public class ChatApplication {
                 case 6:
                     node.getConnection().printKnownUsers();
                     break;
-                /*case 7:
-                    if(node.getVectorClock() == null){
-                        System.out.println("You don't have a vector clock");
-                        break;
-                    }
-                    node.printVectorclock();
-                    break;*/
+                /*
+                 * case 7:
+                 * if(node.getVectorClock() == null){
+                 * System.out.println("You don't have a vector clock");
+                 * break;
+                 * }
+                 * node.printVectorclock();
+                 * break;
+                 */
                 case 7:
                     if (node.getCurrentRoom() == null) {
                         System.out.println("You are not in any room. Join a room before leaving it.");

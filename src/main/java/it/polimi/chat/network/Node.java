@@ -9,6 +9,12 @@ import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 
 import java.net.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
 
 import java.util.concurrent.Executors;
@@ -21,10 +27,10 @@ public class Node {
     private RoomRegistry roomRegistry; // The registry of rooms known to this node
     private ChatRoom currentRoom; // The current room this node is in
     private boolean isRunning; // Whether this node is running or not
-    private static final int MULTICAST_PORT = 49152; // replace with your actual multicast port
     private ScheduledExecutorService scheduler;
     private VectorClock vectorClock;
-
+    private PriorityQueue<Message> messageQueue; // Store messages in a priority queue
+    private Map<String, List<Message>> undeliveredMessages; // Store undelivered messages for temporary disconnections
 
     // Constructor
     public Node(User user) {
@@ -32,23 +38,42 @@ public class Node {
         this.connection = new Connection(); // Initialize the connection
         this.roomRegistry = new RoomRegistry(); // Initialize the room registry
         this.isRunning = true; // Set the node as running
+        this.messageQueue = new PriorityQueue<>(
+                Comparator.comparingInt(m -> m.getVectorClock().getClock().get(user.getUserID())));
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
+        this.undeliveredMessages = new HashMap<>();
 
         // Start listening for multicast and broadcast messages
-        connection.listenForMulticastMessages( this.user, this);
+        connection.listenForMulticastMessages(this.user, this);
         connection.listenForBroadcastMessages(this.roomRegistry, this.user, this);
 
         startHeartbeatMessages();
+    }
 
+    private boolean canDeliver(Message message) {
+        return vectorClock.isClockLocallyUpdated(message.getVectorClock().getClock());
+    }
+
+    private void deliver(Message message) {
+        vectorClock.updateClock(message.getVectorClock().getClock(), user.getUserID());
+        System.out.println("Message delivered from " + message.getUserID() + ": " + message.getContent());
+        // Further handling
+    }
+
+    private void processQueue() {
+        while (!messageQueue.isEmpty() && canDeliver(messageQueue.peek())) {
+            deliver(messageQueue.poll());
+        }
     }
 
     private void startHeartbeatMessages() {
         scheduler.scheduleAtFixedRate(this::sendHeartbeatMessage, 5, 5, TimeUnit.SECONDS);
+        processQueue();
     }
 
     private void sendHeartbeatMessage() {
         Message heartbeatMessage = new Message(user.getUserID(), null, null, user.getUsername(),
-                                            null, null, this.roomRegistry);
+                null, null, this.roomRegistry);
         connection.sendDatagramMessage(heartbeatMessage);
     }
 
@@ -60,9 +85,9 @@ public class Node {
             leaveRoom(currentRoom);
         }
         String multicastIp = connection.generateMulticastIp(roomRegistry);
-        BidiMap<String,String> usernameIds = new DualHashBidiMap<String,String>();
+        BidiMap<String, String> usernameIds = new DualHashBidiMap<String, String>();
         vectorClock = new VectorClock(participantIds);
-        for (String id: participantIds ){
+        for (String id : participantIds) {
             usernameIds.put(id, connection.getKnownUsers().get(id).getUsername());
         }
         ChatRoom room = new ChatRoom(roomId, multicastIp, user.getUserID(), usernameIds);
@@ -75,7 +100,8 @@ public class Node {
         String announcement = "Room with ID -> " + room.getRoomId() + " and multicast IP -> " + room.getMulticastIp() +
                 " created by userId -> " + user.getUsername() + "\nwith participants -> "
                 + String.join(",", room.getAllParticipantUsername());
-        Message message = new Message(user.getUserID(), room.getRoomId(), room.getMulticastIp(), announcement, vectorClock, usernameIds, null);
+        Message message = new Message(user.getUserID(), room.getRoomId(), room.getMulticastIp(), announcement,
+                vectorClock, usernameIds, null);
         System.out.println("Room created!");
 
         connection.sendDatagramMessage(message); // Broadcast the announcement
@@ -83,9 +109,8 @@ public class Node {
     }
 
     // Method to delete a room
-    public void deleteRoom(ChatRoom room) {
-        leaveRoom(room); // Leave the room
-        user.getRooms().remove(room); // Remove the room from the user's list of rooms
+    public void unregisterRoom(ChatRoom room) {
+        // Implementation of the unregisterRoom method
     }
 
     // Method to join a room
@@ -99,6 +124,8 @@ public class Node {
             System.out.println("You are not a participant in this room.");
             return;
         }
+
+        int MULTICAST_PORT = 1234; // Replace 1234 with the actual multicast port number
 
         try {
             InetAddress group = InetAddress.getByName(room.getMulticastIp());
@@ -117,6 +144,8 @@ public class Node {
 
     // Method to leave a room
     public void leaveRoom(ChatRoom room) {
+        int MULTICAST_PORT = 1234; // Replace 1234 with the actual multicast port number
+
         try {
             InetAddress group = InetAddress.getByName(room.getMulticastIp());
             InetAddress addr = InetAddress.getByName(connection.getLocalIPAddress());
@@ -145,16 +174,19 @@ public class Node {
             return;
         }
 
-        // Check if the user is a participant in the current room before sending a message
+        // Check if the user is a participant in the current room before sending a
+        // message
         if (currentRoom.getParticipantUserId().contains(user.getUserID())) {
             vectorClock.incrementLocalClock(user.getUserID());
             Message message = new Message(user.getUserID(), currentRoom.getRoomId(), currentRoom.getMulticastIp(),
-                                        content, vectorClock, currentRoom.getParticipants(), null);
+                    content, vectorClock, currentRoom.getParticipants(), null);
             if (vectorClock.isClockLocallyUpdated(message.getVectorClock().getClock())) {
                 connection.sendMulticastMessage(message, currentRoom.getMulticastIp());
                 System.out.println("Message sent to the room with ID: " + currentRoom.getRoomId());
             } else {
                 System.out.println("Cannot send message: local clock is not updated correctly.");
+                // Store the undelivered message
+                undeliveredMessages.computeIfAbsent(currentRoom.getRoomId(), k -> new ArrayList<>()).add(message);
             }
         } else {
             System.out.println("You are not a participant in this room.");
@@ -187,6 +219,31 @@ public class Node {
         }
     }
 
+    // Method to handle temporary disconnections
+    public void handleTemporaryDisconnection() {
+        if (currentRoom != null) {
+            undeliveredMessages.put(currentRoom.getRoomId(), new ArrayList<>());
+            // Store undelivered messages for the current room
+            for (Message message : currentRoom.getMessagesFromUser(user.getUserID())) {
+                undeliveredMessages.get(currentRoom.getRoomId()).add(message);
+            }
+            // Re-send undelivered messages when re-connected
+            scheduler.schedule(() -> {
+                for (Message message : undeliveredMessages.get(currentRoom.getRoomId())) {
+                    connection.sendMulticastMessage(message, currentRoom.getMulticastIp());
+                }
+                undeliveredMessages.remove(currentRoom.getRoomId());
+            }, 10, TimeUnit.SECONDS);
+        }
+    }
+
+    // Method to update the user interface
+    private List<Message> messages = new ArrayList<>();
+
+    public List<Message> getMessages() {
+        return messages;
+    }
+
     // Method to find a room by ID
     public ChatRoom findRoomById(String roomId) {
         // Find the room in the user's list of rooms
@@ -196,7 +253,7 @@ public class Node {
                 .orElse(null);
 
         if (room == null) {
-            room = roomRegistry.getRoomById(roomId); // If not found, find it in the room registry
+            room = roomRegistry.getRoomById(roomId);
         }
 
         return room;
@@ -208,11 +265,9 @@ public class Node {
 
     public void shutdown() {
         this.isRunning = false;
-
         for (ChatRoom room : user.getRooms()) {
             leaveRoom(room);
         }
-
         connection.closeMulticastSocket();
         connection.stopBroadcastListener();
         scheduler.shutdown();
@@ -240,5 +295,13 @@ public class Node {
 
     public RoomRegistry getRoomRegistry() {
         return roomRegistry;
+    }
+
+    public void deleteRoom(ChatRoom roomToDelete) {
+        unregisterRoom(roomToDelete);
+        // Send a message to all participants to leave the room
+        Message leaveMessage = new Message(user.getUserID(), roomToDelete.getRoomId(), roomToDelete.getMulticastIp(),
+                "Room deleted by " + user.getUsername(), vectorClock, roomToDelete.getParticipants(), null);
+        connection.sendMulticastMessage(leaveMessage, roomToDelete.getMulticastIp());
     }
 }
