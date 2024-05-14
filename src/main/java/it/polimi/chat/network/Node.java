@@ -251,4 +251,7 @@ public class Node {
     public void printVectorclock(){ //now the vector clock is directly printed with the usernames instead of the user ids
         vectorClock.printVectorClock(currentRoom.getParticipants());
     }
+    public MessageQueue getMessageQueues(String roomId) {
+        return messageQueues.get(roomId);
+    }
 }
