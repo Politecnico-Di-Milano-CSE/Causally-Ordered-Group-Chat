@@ -5,9 +5,12 @@ import it.polimi.chat.core.RoomRegistry;
 import it.polimi.chat.core.User;
 import it.polimi.chat.dto.Message;
 import it.polimi.chat.dto.VectorClock;
+import it.polimi.chat.storage.PersistentStorage;
+
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 
+import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -21,33 +24,45 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 public class Node {
-    private User user; // The user associated with this node
-    private Connection connection; // The connection used by this node
-    private RoomRegistry roomRegistry; // The registry of rooms known to this node
-    private ChatRoom currentRoom; // The current room this node is in
-    private boolean isRunning; // Whether this node is running or not
+    private User user;
+    private Connection connection;
+    private RoomRegistry roomRegistry;
+    private ChatRoom currentRoom;
+    private boolean isRunning;
     private ScheduledExecutorService scheduler;
     private VectorClock vectorClock;
-    private PriorityQueue<Message> messageQueue; // Store messages in a priority queue
-    private Map<String, List<Message>> undeliveredMessages; // Store undelivered messages for temporary disconnections
+    private PriorityQueue<Message> messageQueue;
+    private Map<String, List<Message>> undeliveredMessages;
+    private Map<String, Long> lastHeartbeatReceived;
 
-    // Constructor
     public Node(User user) {
-        this.user = user; // Set the user
-        this.connection = new Connection(); // Initialize the connection
-        this.roomRegistry = new RoomRegistry(); // Initialize the room registry
-        this.isRunning = true; // Set the node as running
+        this.user = user;
+        this.connection = new Connection();
+        this.roomRegistry = new RoomRegistry();
+        this.isRunning = true;
         this.messageQueue = new PriorityQueue<>(
                 Comparator.comparingInt(m -> m.getVectorClock().getClock().get(user.getUserID())));
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
         this.undeliveredMessages = new HashMap<>();
+        this.lastHeartbeatReceived = new ConcurrentHashMap<>();
 
-        // Start listening for multicast and broadcast messages
+        // Load saved state
+        try {
+            roomRegistry = PersistentStorage.loadRoomData();
+            messageQueue = PersistentStorage.loadMessages();
+            processQueue();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
         connection.listenForMulticastMessages(this.user, this);
         connection.listenForBroadcastMessages(this.roomRegistry, this.user, this);
 
         startHeartbeatMessages();
+        startHeartbeatChecker();
     }
 
     private boolean canDeliver(Message message) {
@@ -57,7 +72,14 @@ public class Node {
     private void deliver(Message message) {
         vectorClock.updateClock(message.getVectorClock().getClock(), user.getUserID());
         System.out.println("Message delivered from " + message.getUserID() + ": " + message.getContent());
-        // Further handling
+        // Further handling (e.g., updating UI)
+        messages.add(message);
+        // Save message to persistent storage
+        try {
+            PersistentStorage.saveMessages(new PriorityQueue<>(messages));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void processQueue() {
@@ -72,9 +94,30 @@ public class Node {
     }
 
     private void sendHeartbeatMessage() {
-        Message heartbeatMessage = new Message(user.getUserID(), null, null, user.getUsername(),
-                null, null, this.roomRegistry);
+        Message heartbeatMessage = new Message(user.getUserID(), null, null, user.getUsername(), null, null,
+                this.roomRegistry);
         connection.sendDatagramMessage(heartbeatMessage);
+    }
+
+    private void startHeartbeatChecker() {
+        scheduler.scheduleAtFixedRate(() -> {
+            long currentTime = System.currentTimeMillis();
+            for (Map.Entry<String, Long> entry : lastHeartbeatReceived.entrySet()) {
+                if (currentTime - entry.getValue() > 15000) { // 15 seconds timeout
+                    handleDisconnection(entry.getKey());
+                }
+            }
+        }, 5, 5, TimeUnit.SECONDS);
+    }
+
+    private void handleDisconnection(String userId) {
+        System.out.println("User " + userId + " is considered disconnected.");
+        // Handle disconnection logic, such as storing undelivered messages or notifying
+        // other nodes
+    }
+
+    public void receiveHeartbeat(String userId) {
+        lastHeartbeatReceived.put(userId, System.currentTimeMillis());
     }
 
     // Method to create a new room
@@ -223,11 +266,9 @@ public class Node {
     public void handleTemporaryDisconnection() {
         if (currentRoom != null) {
             undeliveredMessages.put(currentRoom.getRoomId(), new ArrayList<>());
-            // Store undelivered messages for the current room
             for (Message message : currentRoom.getMessagesFromUser(user.getUserID())) {
                 undeliveredMessages.get(currentRoom.getRoomId()).add(message);
             }
-            // Re-send undelivered messages when re-connected
             scheduler.schedule(() -> {
                 for (Message message : undeliveredMessages.get(currentRoom.getRoomId())) {
                     connection.sendMulticastMessage(message, currentRoom.getMulticastIp());

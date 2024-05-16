@@ -109,26 +109,20 @@ public class Connection {
                     ObjectInputStream ois = new ObjectInputStream(bais);
                     Message message = (Message) ois.readObject();
 
-                    if (node.getCurrentRoom() != null
+                    if (message.getContent() == null) {
+                        node.receiveHeartbeat(message.getUserID());
+                    } else if (node.getCurrentRoom() != null
                             && node.getCurrentRoom().getRoomId().equals(message.getRoomId())) {
-                        // Check if the message is from the current user
                         if (!message.getUserID().equals(user.getUserID())) {
-                            // Check if the received vector clock has a timestamp for a different process
-                            // that is greater than the local timestamp
                             for (Map.Entry<String, Integer> entry : message.getVectorClock().getClock().entrySet()) {
                                 if (!entry.getKey().equals(message.getUserID())
                                         && entry.getValue() > node.getVectorClock().getClock().get(entry.getKey())) {
-                                    // If so, hold the message and break the loop
                                     System.out.println(
                                             "Holding message until the message from the initial process is received.");
                                     return;
                                 }
                             }
-
-                            // If the loop completes without finding a greater timestamp, update the vector
-                            // clock and print the message
                             node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
-                            // message.getVectorClock().printVectorClock(node.getCurrentRoom().getParticipants());
                         }
                         System.out.println(
                                 knownUsers.get(message.getUserID()).getUsername() + ": " + message.getContent());
@@ -175,28 +169,22 @@ public class Connection {
     // Method to listen for broadcast messages
     public void listenForBroadcastMessages(RoomRegistry roomRegistry, User user, Node node) {
         new Thread(() -> {
-            // Set the flag to true when the listener starts
             isDatagramListenerRunning = true;
             while (node.isRunning() && isDatagramListenerRunning) {
                 try {
-                    // Create a buffer for incoming data
                     byte[] buffer = new byte[2048];
-                    // Create a datagram packet for incoming packets
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                    // Receive a packet
                     datagramSocket.receive(packet);
 
-                    // Deserialize the received object
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                     ObjectInputStream ois = new ObjectInputStream(bais);
                     Message message = (Message) ois.readObject();
 
-                    // Process the message
-                    if (message.getRoomId() == null && message.getMulticastIp() == null) {
-                        // It's a user heartbeat message, update the known users
+                    if (message.getContent() == null) {
+                        node.receiveHeartbeat(message.getUserID());
+                    } else if (message.getRoomId() == null && message.getMulticastIp() == null) {
                         updateKnownUser(message.getUserID(), message.getContent());
                         if (!message.getRoomRegistry().getRooms().isEmpty()) {
-                            // It's a room heartbeat message, update the known rooms
                             for (ChatRoom room : message.getRoomRegistry().getRooms().values()) {
                                 if (!node.getRoomRegistry().getRooms().containsKey(room.getRoomId())) {
                                     String roomId = room.getRoomId();
@@ -226,7 +214,6 @@ public class Connection {
                     e.printStackTrace();
                 }
             }
-            // Set the flag to false when the listener ends
             isDatagramListenerRunning = false;
         }).start();
     }

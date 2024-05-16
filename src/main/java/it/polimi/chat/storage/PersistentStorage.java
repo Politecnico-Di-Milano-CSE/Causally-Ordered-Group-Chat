@@ -22,6 +22,12 @@ public class PersistentStorage {
         }
     }
 
+    public static void saveMessages(PriorityQueue<Message> messages) throws IOException {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(MESSAGES_FILE))) {
+            oos.writeObject(messages);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public static PriorityQueue<Message> loadMessages() throws IOException, ClassNotFoundException {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(MESSAGES_FILE))) {

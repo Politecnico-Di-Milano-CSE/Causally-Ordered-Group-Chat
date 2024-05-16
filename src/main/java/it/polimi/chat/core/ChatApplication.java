@@ -1,10 +1,9 @@
 package it.polimi.chat.core;
 
-import it.polimi.chat.network.Connection;
 import it.polimi.chat.network.Node;
+import it.polimi.chat.storage.PersistentStorage;
 
-import java.net.InetAddress;
-import java.net.NetworkInterface;
+import java.io.IOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.*;
@@ -16,6 +15,15 @@ public class ChatApplication {
         String username = scanner.nextLine();
         User user = new User(username);
         Node node = new Node(user);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                PersistentStorage.saveRoomData(node.getRoomRegistry());
+                PersistentStorage.saveMessages(new PriorityQueue<>(node.getMessages()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
 
         while (true) {
             System.out.println("1. Create a room");
