@@ -22,4 +22,7 @@ public class vectorHeartbeatMessage extends MessageBase {
     public VectorClock getVectorClock() {
         return clock;
     }
+    public MessageType getType() {
+        return type;
+    }
 }

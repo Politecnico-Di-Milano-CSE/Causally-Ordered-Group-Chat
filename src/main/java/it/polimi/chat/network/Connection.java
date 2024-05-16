@@ -238,7 +238,7 @@ public class Connection {
                     if (message.getType()==userHeartbeat) {
                         userHeartbeatMessage msg = (userHeartbeatMessage) message;
                         // It's a heartbeat message, update the known users
-                        updateKnownUser(message.getUserID(), msg.getUsername());
+                        updateKnownUser(msg.getuserId(), msg.getUsername());
                     } else {
                         roomHeartbeatMessage msg = (roomHeartbeatMessage) message;
                         processRoomCreationMessage(msg, roomRegistry, user);

@@ -4,18 +4,20 @@ public class userHeartbeatMessage  extends MessageBase{
  private String username;
  private String userId;
  private MessageType type;
- public userHeartbeatMessage(String username, String userId){
+ public userHeartbeatMessage(String userId, String username){
      this.username = username;
      this.userId = userId;
      this.type = MessageType.userHeartbeat;
  }
  public String getUsername() {
+
      return username;
  }
- public String getUserId() {
+ public String getuserId() {
      return userId;
  }
  public MessageType getType() {
+
      return type;
  }
 }

@@ -70,6 +70,9 @@ public class RoomMessage extends MessageBase {
     public void setParticipants(BidiMap<String,String> participants) {
         this.participants = participants;
     }
+    public MessageType getMessageType() {
+        return messageType;
+    }
 }
 
 
