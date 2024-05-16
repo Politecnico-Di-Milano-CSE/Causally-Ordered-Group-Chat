@@ -21,7 +21,7 @@ public class roomHeartbeatMessage extends MessageBase {
     public String getRoomId() {
         return roomId;
     }
-    public MessageType getMessageType() {
+    public MessageType getType() {
         return messageType;
     }
     public String getMulticastIp() {

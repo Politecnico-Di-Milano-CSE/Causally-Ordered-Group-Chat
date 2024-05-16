@@ -13,7 +13,7 @@ public class userHeartbeatMessage  extends MessageBase{
 
      return username;
  }
- public String getuserId() {
+ public String getUserId() {
      return userId;
  }
  public MessageType getType() {
