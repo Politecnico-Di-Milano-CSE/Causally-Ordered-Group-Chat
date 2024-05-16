@@ -1,4 +1,4 @@
-package it.polimi.chat.dto;
+package it.polimi.chat.dto.message;
 
 public enum MessageType {
     logRequest,

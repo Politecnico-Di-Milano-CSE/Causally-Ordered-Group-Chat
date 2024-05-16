@@ -1,5 +1,6 @@
 package it.polimi.chat.dto;
 
+import it.polimi.chat.dto.message.RoomMessage;
 import org.apache.commons.collections4.BidiMap;
 
 import java.io.Serializable;
@@ -17,7 +18,7 @@ public class MessageQueue  implements Serializable {
         messageLog = new ArrayList<>();
         checkpoint = new ArrayList<>();
     }
-    public void addMessageToLog (Message message) {
+    public void addMessageToLog (RoomMessage message) {
         LoggedMessage msg= new LoggedMessage();
         msg.content=message.getContent();
         msg.userid=message.getUserID();
@@ -83,5 +84,12 @@ public class MessageQueue  implements Serializable {
     public ArrayList <LoggedMessage> getTrimmedMessageLog(Integer check) { //trims the log message to the desired length, supposed to be used specifically to be sent to other users
         ArrayList <LoggedMessage> trimmedMessageLog = new ArrayList<>(messageLog.subList(check,messageLog.size()));
         return trimmedMessageLog;
+    }
+
+    public ArrayList<Integer> getCheckpoint() {
+        return checkpoint;
+    }
+    public Integer getLastCheckpoint() {
+        return checkpoint.get(checkpoint.size()-1);
     }
 }

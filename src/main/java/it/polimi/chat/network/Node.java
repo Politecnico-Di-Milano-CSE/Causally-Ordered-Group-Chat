@@ -3,13 +3,14 @@ package it.polimi.chat.network;
 import it.polimi.chat.core.ChatRoom;
 import it.polimi.chat.core.RoomRegistry;
 import it.polimi.chat.core.User;
-import it.polimi.chat.dto.Message;
+import it.polimi.chat.dto.LoggedMessage;
 import it.polimi.chat.dto.MessageQueue;
 import it.polimi.chat.dto.VectorClock;
+import it.polimi.chat.dto.message.*;
+import it.polimi.chat.dto.message.userHeartbeatMessage;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -55,16 +56,14 @@ public class Node {
     }
 
     private void sendHeartbeatMessage() {
-        Message heartbeatMessage = new Message(user.getUserID(), null, null, user.getUsername(),
-                                            null, null);
+        userHeartbeatMessage heartbeatMessage = new userHeartbeatMessage(user.getUserID(), user.getUsername());
         connection.sendDatagramMessage(heartbeatMessage);
     }
     private void startRoomHeartbeatMessages() {
         roomScheduler.scheduleAtFixedRate(this::sendRoomHeartbeatMessage, 5, 5, TimeUnit.SECONDS);
     }
     private void sendRoomHeartbeatMessage() {
-        Message heartbeatMessage = new Message(user.getUserID(), currentRoom.getRoomId(), currentRoom.getMulticastIp(), "Heartbeat of:"+currentRoom.getRoomId(),
-                null, currentRoom.getParticipants());
+        roomHeartbeatMessage heartbeatMessage = new roomHeartbeatMessage(user.getUserID(), currentRoom.getRoomId(), currentRoom.getMulticastIp(), currentRoom.getParticipants());
         connection.sendDatagramMessage(heartbeatMessage);
     }
 
@@ -83,10 +82,10 @@ public class Node {
         roomRegistry.registerRoom(room); // Register the room in the room registry
 
         // Broadcast the creation of the room with participant list
-        String announcement = "Room with ID -> " + room.getRoomId() + " and multicast IP -> " + multicastIp +
+       /* String announcement = "Room with ID -> " + room.getRoomId() + " and multicast IP -> " + multicastIp +
                 " created by userId -> " + user.getUsername() + "\nwith participants -> "
-                + String.join(",", room.getAllParticipantUsername());
-        Message message = new Message(user.getUserID(), room.getRoomId(), multicastIp, announcement, vectorClock, usernameIds);
+                + String.join(",", room.getAllParticipantUsername());*/
+        roomHeartbeatMessage message = new roomHeartbeatMessage(user.getUserID(), room.getRoomId(), multicastIp, usernameIds);
         System.out.println("Room created!");
         printVectorclock();
 
@@ -160,7 +159,7 @@ public class Node {
         // Check if the user is a participant in the current room before sending a message
         if (currentRoom.getParticipantUserId().contains(user.getUserID())) {
             vectorClock.incrementLocalClock(user.getUserID());
-            Message message = new Message(user.getUserID(), currentRoom.getRoomId(), currentRoom.getMulticastIp(),
+            RoomMessage message = new RoomMessage(user.getUserID(), currentRoom.getRoomId(), currentRoom.getMulticastIp(),
                                         content, vectorClock, currentRoom.getParticipants());
             if (vectorClock.isClockLocallyUpdated(message.getVectorClock().getClock())) {
                 connection.sendMulticastMessage(message, currentRoom.getMulticastIp());
@@ -253,5 +252,10 @@ public class Node {
     }
     public MessageQueue getMessageQueues(String roomId) {
         return messageQueues.get(roomId);
+    }
+    public void printYourLog (){
+        for(LoggedMessage msg : messageQueues.get(currentRoom.getRoomId()).getMessageLog()){
+            System.out.println(msg.content);
+        }
     }
 }

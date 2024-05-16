@@ -3,12 +3,14 @@ package it.polimi.chat.network;
 import it.polimi.chat.core.ChatRoom;
 import it.polimi.chat.core.RoomRegistry;
 import it.polimi.chat.core.User;
-import it.polimi.chat.dto.Message;
+import it.polimi.chat.dto.message.*;
 import org.apache.commons.collections4.BidiMap;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
+
+import static it.polimi.chat.dto.message.MessageType.userHeartbeat;
 
 public class Connection {
     // Constants for the multicast and broadcast ports
@@ -57,7 +59,7 @@ public class Connection {
     }
 
     // Method to send a multicast message
-    public void sendMulticastMessage(Message message, String multicastIp) {
+    public void sendMulticastMessage(MessageBase message, String multicastIp) {
         try {
             // Serialize the Message object to a byte array
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -77,7 +79,7 @@ public class Connection {
     }
 
     // Method to send a broadcast message
-    public void sendDatagramMessage(Message message) {
+    public void sendDatagramMessage(MessageBase message) {
         try {
             // Serialize the Message object to a byte array
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -104,51 +106,81 @@ public class Connection {
             isDatagramListenerRunning = true;
             while (node.isRunning() && isDatagramListenerRunning) {
                 try {
-                    byte[] buffer = new byte[1024];
+                    byte[] buffer = new byte[8192];
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     multicastSocket.receive(packet);
 
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                     ObjectInputStream ois = new ObjectInputStream(bais);
-                    Message message = (Message) ois.readObject();
-
-                    if (node.getCurrentRoom() != null && node.getCurrentRoom().getRoomId().equals(message.getRoomId())) {
-                        // Check if the message is from the current user
-                        if (!message.getUserID().equals(user.getUserID())) {
-                            if (message.getContent() == "log needed") {
-                                System.out.println(message.getContent());//todo remove
-                                Integer i=0;
-                                for (String entry : message.getVectorClock().getClock().keySet()) {
-                                    {
-                                        if(message.getVectorClock().getClock().get(entry)>i) {
-                                            i=message.getVectorClock().getClock().get(entry);
-                                        }
-                                    }
-                                }
-                                node.getMessageQueues(message.getRoomId()).getTrimmedMessageLog(i);//todo actually send it
-
-                            } else {
-                                boolean vectorclockIsUpdated= true;
+                    MessageBase msg = (MessageBase) ois.readObject();
+                    switch(msg.getType()) {
+                        case roomMessage:
+                            RoomMessage message = (RoomMessage) msg;
+                            if (node.getCurrentRoom() != null && node.getCurrentRoom().getRoomId().equals(message.getRoomId())) {
+                                // Check if the message is from the current user
+                                boolean vectorclockIsUpdated = true;
                                 // Check if the received vector clock has a timestamp for a different process that is greater than the local timestamp
                                 for (Map.Entry<String, Integer> entry : message.getVectorClock().getClock().entrySet()) {
                                     if (!entry.getKey().equals(message.getUserID()) && entry.getValue() > node.getVectorClock().getClock().get(entry.getKey())) {
                                         // If so, hold the message and break the loop
-                                        Message msg = new Message(user.getUserID(), node.getCurrentRoom().getRoomId(), node.getCurrentRoom().getMulticastIp(), "log needed", node.getVectorClock(), node.getCurrentRoom().getParticipants());
-                                        sendMulticastMessage(msg, node.getCurrentRoom().getMulticastIp());
+                                        logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),
+                                                node.getMessageQueues(node.getCurrentRoom().getRoomId()).getLastCheckpoint(),node.getVectorClock());
+                                        sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
+
                                         System.out.println("Holding message until the message from the initial process is received.");
-                                        vectorclockIsUpdated=false;
+                                        vectorclockIsUpdated = false;
                                         break;
                                     }
-                                }
-                                if(vectorclockIsUpdated) {
-                                    // If the loop completes without finding a greater timestamp, update the vector clock and print the message
-                                    node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
 
-                                    System.out.println(knownUsers.get(message.getUserID()).getUsername() + ": " + message.getContent());
+                                    }
+                                    if (vectorclockIsUpdated) {
+                                        // If the loop completes without finding a greater timestamp, update the vector clock and print the message
+                                        node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
+
+                                        System.out.println(knownUsers.get(message.getUserID()).getUsername() + ": " + message.getContent());
+                                    }
+
+                            }
+                            break;
+                        case logRequest:
+                            logRequestMessage request = (logRequestMessage) msg;
+                            if (!request.getUserID().equals(user.getUserID())) {
+
+                                   System.out.println("logrequest received from "+ knownUsers.get(request.getUserid()).getUsername()+ "in room: "+ request.getRoomId()); //todo remove this
+                                if (node.getCurrentRoom().getRoomId().equals(request.getRoomId())) {
+                                    if (node.getMessageQueues(node.getCurrentRoom().getRoomId()).getLastCheckpoint()>=request.getCheckpoint() && node.getVectorClock().isClockLocallyUpdated(request.getVectorClock().getClock())) {
+                                        logResponseMessage Response = new logResponseMessage(user.getUserID(), node.getCurrentRoom().getRoomId(), request.getCheckpoint(), node.getMessageQueues(request.getRoomId()).getTrimmedMessageLog(request.getCheckpoint()),node.getVectorClock());
+                                        sendMulticastMessage(Response, node.getCurrentRoom().getMulticastIp());
+                                    }
+                                }
+                                }
+                            break;
+                        case logResponse:
+                            logResponseMessage response = (logResponseMessage) msg;
+                            if(!response.getUserID().equals(user.getUserID()) && Objects.equals(response.getRoomid(), node.getCurrentRoom().getRoomId())) {
+                                if (!node.getVectorClock().isClockLocallyUpdated(response.getVectorClock().getClock())) {
+                                    System.out.println("updating clock from log response"); //todo remove?
+                                    node.getMessageQueues(node.getCurrentRoom().getRoomId()).updatelog(response.getLog());
+                                    node.getVectorClock().updateClock(response.getVectorClock().getClock(), user.getUserID());
                                 }
                             }
-                        }
-                        }
+                        break;
+                        case vectorHeartbeat:
+                            vectorHeartbeatMessage heartbeat = (vectorHeartbeatMessage) msg;
+                            if(!heartbeat.getUserID().equals(user.getUserID()) && Objects.equals(heartbeat.getRoomId(), node.getCurrentRoom().getRoomId())) {
+                                if (!node.getVectorClock().isClockLocallyUpdated(heartbeat.getVectorClock().getClock())) {
+                                    logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),
+                                            node.getMessageQueues(node.getCurrentRoom().getRoomId()).getLastCheckpoint(),node.getVectorClock());
+                                    sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
+                                    System.out.println("clock doesnt seem updated from heartbeat"); //todo remove
+                                }
+                            }
+                       break;
+                        default: System.out.println("Default multicast message: "); //todo remove
+                    }
+
+
+
                 } catch (SocketException e) {
                     if (isDatagramListenerRunning && node.isRunning()) {
                         e.printStackTrace();
@@ -164,14 +196,13 @@ public class Connection {
 
 
     // Method to process a room creation message
-    private void processRoomCreationMessage(Message message, RoomRegistry roomRegistry, User user) {
+    private void processRoomCreationMessage(roomHeartbeatMessage message, RoomRegistry roomRegistry, User user) {
         // Check if the message is a room creation message
         if (message.getRoomId() != null && message.getMulticastIp() != null && message.getUserID() != null) {
             // Extract the room details from the message
             String roomId = message.getRoomId();
             String multicastIp = message.getMulticastIp();
             String creatorUserId = message.getUserID();
-            String content = message.getContent();
             BidiMap<String,String> participants = message.getParticipants();
             if(roomRegistry.getRoomById(roomId)==null){
                 // Create a new chat room with participants
@@ -179,13 +210,13 @@ public class Connection {
                 // Register the room
                 roomRegistry.registerRoom(room);
                 // prints the message of either room creation or room heartbeat of once they register inside
-                System.out.println(content);
+                System.out.println("Found room with id: " + roomId);
             }
 
 
         } else {
             // Print the received broadcast message
-            System.out.println("Broadcast message received: " + message.getContent());
+            System.out.println("Found room with id: " + message.getRoomId());
         }
     }
 
@@ -206,14 +237,16 @@ public class Connection {
                     // Deserialize the received object
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                     ObjectInputStream ois = new ObjectInputStream(bais);
-                    Message message = (Message) ois.readObject();
+                    MessageBase message = (MessageBase) ois.readObject();
 
                     // Process the message
-                    if (message.getRoomId() == null && message.getMulticastIp() == null) {
+                    if (message.getType()==userHeartbeat) {
+                        userHeartbeatMessage msg = (userHeartbeatMessage) message;
                         // It's a heartbeat message, update the known users
-                        updateKnownUser(message.getUserID(), message.getContent());
+                        updateKnownUser(message.getUserID(), msg.getUsername());
                     } else {
-                        processRoomCreationMessage(message, roomRegistry, user);
+                        roomHeartbeatMessage msg = (roomHeartbeatMessage) message;
+                        processRoomCreationMessage(msg, roomRegistry, user);
                     }
                 } catch (SocketException e) {
                     if (isDatagramListenerRunning && node.isRunning()) {

@@ -23,6 +23,7 @@ public class ChatApplication {
             System.out.println("8. Leave room");
             System.out.println("9. Print your UserId");
             System.out.println("10. Shut down the application");
+            System.out.println("11. Print your log");
             System.out.print("Choose an option: ");
 
             int option = scanner.nextInt();
@@ -122,6 +123,8 @@ public class ChatApplication {
                 case 10:
                     node.shutdown();
                     System.exit(0);
+                case 11:
+                    node.printYourLog();
             }
         }
     }
