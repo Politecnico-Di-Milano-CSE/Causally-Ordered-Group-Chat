@@ -10,7 +10,7 @@ import it.polimi.chat.dto.message.*;
 import it.polimi.chat.dto.message.userHeartbeatMessage;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
-
+import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -28,7 +28,7 @@ public class Node {
     private RoomRegistry roomRegistry; // The registry of rooms known to this node
     private ChatRoom currentRoom; // The current room this node is in
     private boolean isRunning; // Whether this node is running or not
-    private static final int MULTICAST_PORT = 1234; // replace with your actual multicast port
+    private static final int MULTICAST_PORT = 49152; // replace with your actual multicast port
     private ScheduledExecutorService scheduler, roomScheduler;
     private VectorClock vectorClock;
     private Map<String,MessageQueue> messageQueues;
@@ -69,7 +69,12 @@ public class Node {
 
     // Method to create a new room
     public ChatRoom createRoom(String roomId, Set<String> participantIds) {
-        String multicastIp = getNextMulticastIp(); // Get the next available multicast IP
+        // Check if a user is already in a room
+        if (currentRoom != null) {
+            // If so, leave the current room
+            leaveRoom(currentRoom);
+        }
+        String multicastIp = connection.generateMulticastIp(roomRegistry);
         BidiMap<String,String> usernameIds = new DualHashBidiMap<String,String>();
         vectorClock = new VectorClock(participantIds);
         for (String id: participantIds ){
@@ -113,8 +118,9 @@ public class Node {
         }
 
         try {
-            InetAddress group = InetAddress.getByName(room.getMulticastIp()); // Get the multicast group address
-            NetworkInterface networkInterface = NetworkInterface.getByInetAddress(group);
+            InetAddress group = InetAddress.getByName(room.getMulticastIp());
+            InetAddress addr = InetAddress.getByName(connection.getLocalIPAddress());
+            NetworkInterface networkInterface = NetworkInterface.getByInetAddress(addr);
             connection.getMulticastSocket().joinGroup(new InetSocketAddress(group, MULTICAST_PORT), networkInterface);
             currentRoom = room; // Set the current room
             System.out.println("Joined the room with ID: " + currentRoom.getRoomId());
@@ -130,8 +136,9 @@ public class Node {
     // Method to leave a room
     public void leaveRoom(ChatRoom room) {
         try {
-            InetAddress group = InetAddress.getByName(room.getMulticastIp()); // Get the multicast group address
-            NetworkInterface networkInterface = NetworkInterface.getByInetAddress(group);
+            InetAddress group = InetAddress.getByName(room.getMulticastIp());
+            InetAddress addr = InetAddress.getByName(connection.getLocalIPAddress());
+            NetworkInterface networkInterface = NetworkInterface.getByInetAddress(addr);
             connection.getMulticastSocket().leaveGroup(new InetSocketAddress(group, MULTICAST_PORT), networkInterface);
 
             currentRoom = null; // Set the current room to null
@@ -215,11 +222,6 @@ public class Node {
         return room;
     }
 
-    private String getNextMulticastIp() {
-        int index = Connection.nextIpIndex++ % Connection.MULTICAST_IPS.length;
-        return Connection.MULTICAST_IPS[index];
-    }
-
     public ChatRoom getCurrentRoom() {
         return currentRoom;
     }
@@ -247,9 +249,19 @@ public class Node {
     public VectorClock getVectorClock() {
         return vectorClock;
     }
-    public void printVectorclock(){ //now the vector clock is directly printed with the usernames instead of the user ids
-        vectorClock.printVectorClock(currentRoom.getParticipants());
+
+    public void printVectorclock() {
+        if (currentRoom != null) {
+            vectorClock.printVectorClock(currentRoom.getParticipants());
+        } else {
+            System.out.println("You are not in any room.");
+        }
     }
+
+    public RoomRegistry getRoomRegistry() {
+        return roomRegistry;
+    }
+
     public MessageQueue getMessageQueues(String roomId) {
         return messageQueues.get(roomId);
     }

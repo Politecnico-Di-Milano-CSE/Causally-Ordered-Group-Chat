@@ -1,9 +1,10 @@
 package it.polimi.chat.core;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.UUID;
 
-public class User {
+public class User implements Serializable {
 
     private String userID;
     private String username;

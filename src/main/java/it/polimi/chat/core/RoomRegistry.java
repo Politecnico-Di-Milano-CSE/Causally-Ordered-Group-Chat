@@ -1,9 +1,10 @@
 package it.polimi.chat.core;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RoomRegistry {
+public class RoomRegistry implements Serializable {
     private Map<String, ChatRoom> rooms; // Map to store rooms
 
     // Constructor for the RoomRegistry class
