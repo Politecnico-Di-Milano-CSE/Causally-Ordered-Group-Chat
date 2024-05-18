@@ -109,15 +109,19 @@ public class Connection {
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                     ObjectInputStream ois = new ObjectInputStream(bais);
                     MessageBase msg = (MessageBase) ois.readObject();
+
+                    System.out.println("Bruh message arrivato"); //todo REMOVE
                     switch(msg.getType()) {
                         case roomMessage:
+                            System.out.println("Bruh ROOM MESSAGE"); //TODO REMOVE
                             RoomMessage message = (RoomMessage) msg;
-                            if (node.getCurrentRoom() != null && node.getCurrentRoom().getRoomId().equals(message.getRoomId()) && user.getUserID()==message.getUserID()) {
+                            if (node.getCurrentRoom() != null && node.getCurrentRoom().getRoomId().equals(message.getRoomId())) {
                                 // Check if the message is from the current user
                                 boolean vectorclockIsUpdated = true;
                                 // Check if the received vector clock has a timestamp for a different process that is greater than the local timestamp
                                 for (Map.Entry<String, Integer> entry : message.getVectorClock().getClock().entrySet()) {
-                                    if (!entry.getKey().equals(message.getUserID()) && entry.getValue()>node.getVectorClock().getClock().get(entry.getKey())) {
+                                    if (!entry.getKey().equals(message.getUserID()) ) {
+                                        if (entry.getValue()>node.getVectorClock().getClock().get(entry.getKey())){
                                         // If so, hold the message and break the loop
                                         logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),
                                                 node.getMessageQueues(node.getCurrentRoom().getRoomId()).getLastCheckpoint(),node.getVectorClock());
@@ -126,7 +130,8 @@ public class Connection {
                                         System.out.println("Holding message until the message from the initial process is received.");
                                         vectorclockIsUpdated = false;
                                         break;
-                                    } else if (entry.getKey().equals(message.getUserID()) && entry.getValue()>node.getVectorClock().getClock().get(entry.getKey())+1) {
+                                        }
+                                    } else if (entry.getValue()>node.getVectorClock().getClock().get(entry.getKey())+1) {
                                         logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),
                                                 node.getMessageQueues(node.getCurrentRoom().getRoomId()).getLastCheckpoint(),node.getVectorClock());
                                         sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
@@ -137,9 +142,10 @@ public class Connection {
                                     }
                                 }
                                     if (vectorclockIsUpdated) {
+                                        System.out.println("Bruh VECTOR CLOCK IS UPDATED");
                                         // If the loop completes without finding a greater timestamp, update the vector clock and print the message
                                         node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
-                                        node.getMessageQueues(message.getRoomId()).addMessageToLog(message);
+                                        if (user.getUserID()==message.getUserID()){node.getMessageQueues(message.getRoomId()).addMessageToLog(message);}
                                         System.out.println(knownUsers.get(message.getUserID()).getUsername() + ": " + message.getContent());
                                     }
 
