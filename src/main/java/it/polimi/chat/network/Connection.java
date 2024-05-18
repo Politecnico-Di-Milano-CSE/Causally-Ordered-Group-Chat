@@ -109,11 +109,8 @@ public class Connection {
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                     ObjectInputStream ois = new ObjectInputStream(bais);
                     MessageBase msg = (MessageBase) ois.readObject();
-
-                    System.out.println("Bruh message arrivato"); //todo REMOVE
                     switch(msg.getType()) {
                         case roomMessage:
-                            System.out.println("Bruh ROOM MESSAGE"); //TODO REMOVE
                             RoomMessage message = (RoomMessage) msg;
                             if (node.getCurrentRoom() != null && node.getCurrentRoom().getRoomId().equals(message.getRoomId())) {
                                 // Check if the message is from the current user
@@ -142,7 +139,6 @@ public class Connection {
                                     }
                                 }
                                     if (vectorclockIsUpdated) {
-                                        System.out.println("Bruh VECTOR CLOCK IS UPDATED"); //todo remove
                                         // If the loop completes without finding a greater timestamp, update the vector clock and print the message
                                         node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
                                         if (user.getUserID()==message.getUserID()){node.getMessageQueues(message.getRoomId()).addMessageToLog(message);}

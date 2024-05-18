@@ -84,8 +84,6 @@ public class Node {
                 + String.join(",", room.getAllParticipantUsername());*/
         registryHeartbeatMessage message = new registryHeartbeatMessage(user.getUserID(), user.getUsername(),roomRegistry);
         System.out.println("Room created!");
-        printVectorclock();
-
         connection.sendDatagramMessage(message); // Broadcast the announcement
         return room; // Return the newly created room
     }
