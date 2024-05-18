@@ -40,7 +40,7 @@ public class MessageQueue  implements Serializable {
         messageLog.add(msg);
     }
     public void updatelog (ArrayList<LoggedMessage>  trimmedLog){
-        Integer i = checkpoint.get(checkpoint.size()-1);
+        Integer i = getLastCheckpoint();
         int j;
         for (j =0;j< trimmedLog.size() && i< messageLog.size();j++){
                 switch (messageLog.get(i).compareTo(trimmedLog.get(j))){
