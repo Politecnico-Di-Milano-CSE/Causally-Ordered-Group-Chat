@@ -160,7 +160,7 @@ public class Connection {
                                         if (node.getMessageQueues(node.getCurrentRoom().getRoomId()).getLastCheckpoint() >= request.getCheckpoint() && node.getVectorClock().isClockLocallyUpdated(request.getVectorClock().getClock())) {
                                             logResponseMessage Response = new logResponseMessage(user.getUserID(), node.getCurrentRoom().getRoomId(), request.getCheckpoint(), node.getMessageQueues(request.getRoomId()).getTrimmedMessageLog(request.getCheckpoint()), node.getVectorClock());
                                             sendMulticastMessage(Response, node.getCurrentRoom().getMulticastIp());
-                                            System.out.println("the thing i sent is this big: "node.getMessageQueues(request.getRoomId()).getTrimmedMessageLog(request.getCheckpoint()).size()); //todo remove
+                                            System.out.println("the thing i sent is this big: "+node.getMessageQueues(request.getRoomId()).getTrimmedMessageLog(request.getCheckpoint()).size()); //todo remove
                                         }
                                     }
                                 }
@@ -168,7 +168,7 @@ public class Connection {
                             case logResponse:
                                 if (!msg.getUserID().equals(user.getUserID())) {
                                     logResponseMessage response = (logResponseMessage) msg;
-                                    System.out.println("response size :"response.getLog().size()); //todo remove
+                                    System.out.println("response size :"+ response.getLog().size()); //todo remove
                                     if (response.getRoomid().equals(node.getCurrentRoom().getRoomId())) {
                                         if (!node.getVectorClock().isClockLocallyUpdated(response.getVectorClock().getClock())) {
                                             System.out.println("updating clock from log response from " + knownUsers.get(response.getUserID()).getUsername()); //todo remove?
