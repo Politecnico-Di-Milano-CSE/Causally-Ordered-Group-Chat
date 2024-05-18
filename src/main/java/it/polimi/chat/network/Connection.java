@@ -102,7 +102,7 @@ public class Connection {
             isDatagramListenerRunning = true;
             while (node.isRunning() && isDatagramListenerRunning) {
                 try {
-                    byte[] buffer = new byte[8192];
+                    byte[] buffer = new byte[65536];
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     multicastSocket.receive(packet);
 
@@ -242,7 +242,7 @@ public class Connection {
             while (node.isRunning() && isDatagramListenerRunning) {
                 try {
                     // Create a buffer for incoming data
-                    byte[] buffer = new byte[2048];
+                    byte[] buffer = new byte[4096];
                     // Create a datagram packet for incoming packets
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     // Receive a packet
