@@ -142,7 +142,7 @@ public class Connection {
                                     }
                                 }
                                     if (vectorclockIsUpdated) {
-                                        System.out.println("Bruh VECTOR CLOCK IS UPDATED");
+                                        System.out.println("Bruh VECTOR CLOCK IS UPDATED"); //todo remove
                                         // If the loop completes without finding a greater timestamp, update the vector clock and print the message
                                         node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
                                         if (user.getUserID()==message.getUserID()){node.getMessageQueues(message.getRoomId()).addMessageToLog(message);}
