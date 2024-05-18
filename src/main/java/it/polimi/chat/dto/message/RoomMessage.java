@@ -5,7 +5,6 @@ import org.apache.commons.collections4.BidiMap;
 
 public class RoomMessage extends MessageBase {
     private String roomId;
-
     private String multicastIp;
     private String content;
     private VectorClock vectorClock;

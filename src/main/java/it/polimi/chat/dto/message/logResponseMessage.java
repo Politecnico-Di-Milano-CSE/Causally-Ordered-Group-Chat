@@ -8,7 +8,6 @@ import java.util.ArrayList;
 public class logResponseMessage extends MessageBase {
     private ArrayList <LoggedMessage> log;
     private Integer checkpoint;
-    private String Userid;
     private String RoomId;
     private VectorClock clock;
     public logResponseMessage(String Userid, String RoomID, Integer checkpoint, ArrayList<LoggedMessage> log, VectorClock clock) {

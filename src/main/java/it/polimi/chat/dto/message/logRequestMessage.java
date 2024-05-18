@@ -11,6 +11,7 @@ public class logRequestMessage extends MessageBase{
         super(Userid, MessageType.logRequest);
         this.RoomId = RoomID;
         this.checkpoint = checkpoint;
+        this.vectorClock = vectorClock;
     }
     public Integer getCheckpoint() {
         return checkpoint;
