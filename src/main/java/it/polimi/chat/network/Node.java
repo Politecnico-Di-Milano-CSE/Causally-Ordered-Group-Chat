@@ -7,10 +7,9 @@ import it.polimi.chat.dto.LoggedMessage;
 import it.polimi.chat.dto.MessageQueue;
 import it.polimi.chat.dto.VectorClock;
 import it.polimi.chat.dto.message.*;
-import it.polimi.chat.dto.message.userHeartbeatMessage;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
-import java.net.*;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -52,18 +51,11 @@ public class Node {
     }
 
     private void startHeartbeatMessages() {
-        scheduler.scheduleAtFixedRate(this::sendHeartbeatMessage, 5, 5, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::sendHeartbeatMessage, 2, 5, TimeUnit.SECONDS);
     }
 
     private void sendHeartbeatMessage() {
-        userHeartbeatMessage heartbeatMessage = new userHeartbeatMessage(user.getUserID(), user.getUsername());
-        connection.sendDatagramMessage(heartbeatMessage);
-    }
-    private void startRoomHeartbeatMessages() {
-        roomScheduler.scheduleAtFixedRate(this::sendRoomHeartbeatMessage, 5, 5, TimeUnit.SECONDS);
-    }
-    private void sendRoomHeartbeatMessage() {
-        roomHeartbeatMessage heartbeatMessage = new roomHeartbeatMessage(user.getUserID(), currentRoom.getRoomId(), currentRoom.getMulticastIp(), currentRoom.getParticipants());
+        registryHeartbeatMessage heartbeatMessage = new registryHeartbeatMessage(user.getUserID(), user.getUsername(),this.roomRegistry);
         connection.sendDatagramMessage(heartbeatMessage);
     }
 
@@ -90,12 +82,11 @@ public class Node {
        /* String announcement = "Room with ID -> " + room.getRoomId() + " and multicast IP -> " + multicastIp +
                 " created by userId -> " + user.getUsername() + "\nwith participants -> "
                 + String.join(",", room.getAllParticipantUsername());*/
-        roomHeartbeatMessage message = new roomHeartbeatMessage(user.getUserID(), room.getRoomId(), multicastIp, usernameIds);
+        registryHeartbeatMessage message = new registryHeartbeatMessage(user.getUserID(), user.getUsername(),roomRegistry);
         System.out.println("Room created!");
         printVectorclock();
 
         connection.sendDatagramMessage(message); // Broadcast the announcement
-        startRoomHeartbeatMessages();
         return room; // Return the newly created room
     }
 
@@ -127,7 +118,6 @@ public class Node {
             user.getRooms().add(room); // Add the room to the user's list of rooms
             vectorClock = new VectorClock(room.getParticipantUserId());
             messageQueues.put(room.getRoomId(),new MessageQueue(room.getParticipants()));
-            startRoomHeartbeatMessages();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -170,8 +160,8 @@ public class Node {
                                         content, vectorClock, currentRoom.getParticipants());
             if (vectorClock.isClockLocallyUpdated(message.getVectorClock().getClock())) {
                 connection.sendMulticastMessage(message, currentRoom.getMulticastIp());
-                System.out.println("Message sent to the room with ID: " + currentRoom.getRoomId());
-                printVectorclock();
+                /*System.out.println("Message sent to the room with ID: " + currentRoom.getRoomId());
+                printVectorclock(); todo remove*/
                 messageQueues.get(currentRoom.getRoomId()).addMessageToLog(message);
             } else {
                 System.out.println("Cannot send message: local clock is not updated correctly.");
@@ -267,7 +257,7 @@ public class Node {
     }
     public void printYourLog (){
         for(LoggedMessage msg : messageQueues.get(currentRoom.getRoomId()).getMessageLog()){
-            System.out.println(msg.content);
+            System.out.println(currentRoom.getParticipantUsername(msg.userid)+": "+ msg.content);
         }
     }
 }

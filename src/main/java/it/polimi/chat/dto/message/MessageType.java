@@ -4,7 +4,7 @@ public enum MessageType {
     logRequest,
     logResponse,
     userHeartbeat,
-    roomHeartbeat,
+    registryHeartbeat,
     vectorHeartbeat,
     roomMessage
 }

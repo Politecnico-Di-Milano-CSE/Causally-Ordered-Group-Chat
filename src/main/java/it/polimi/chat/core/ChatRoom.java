@@ -48,7 +48,9 @@ public class ChatRoom implements Serializable {
     public String getParticipantUserId(String username) {
         return participants.get(username);
     }
-
+    public String getParticipantUsername(String userid) {
+        return participants.get(userid);
+    }
     public void addParticipant(String userId, String username ){
         this.participants.put(userId,username);
     }

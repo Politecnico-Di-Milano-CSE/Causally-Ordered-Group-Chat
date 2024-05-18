@@ -6,7 +6,7 @@ public class MessageBase implements Serializable {
     public String userID;
     private MessageType type;
     //contains the userids and username of the participants
-    public MessageBase (){}
+    public MessageBase() {}
     public MessageBase(String userID, MessageType type) {
         this.userID = userID;
         this.type = type;

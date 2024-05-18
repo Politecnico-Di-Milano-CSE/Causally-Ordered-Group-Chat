@@ -4,9 +4,8 @@ import it.polimi.chat.dto.VectorClock;
 import org.apache.commons.collections4.BidiMap;
 
 public class RoomMessage extends MessageBase {
-    private String userID;
     private String roomId;
-    private MessageType messageType;
+
     private String multicastIp;
     private String content;
     private VectorClock vectorClock;
@@ -14,7 +13,7 @@ public class RoomMessage extends MessageBase {
     //contains the userids and username of the participants
 
     public RoomMessage(String userID, String roomId, String multicastIp, String content, VectorClock vectorClock, BidiMap<String,String> participants) {
-        this.messageType = MessageType.roomMessage;
+        super(userID ,MessageType.roomMessage);
         this.userID = userID;
         this.roomId = roomId;
         this.multicastIp = multicastIp;
@@ -22,9 +21,6 @@ public class RoomMessage extends MessageBase {
         this.vectorClock = vectorClock;
         this.participants = participants;
 
-    }
-    public String getUserID() {
-        return userID;
     }
 
     public void setUserID(String userID) {
@@ -69,9 +65,6 @@ public class RoomMessage extends MessageBase {
 
     public void setParticipants(BidiMap<String,String> participants) {
         this.participants = participants;
-    }
-    public MessageType getType() {
-        return messageType;
     }
 }
 

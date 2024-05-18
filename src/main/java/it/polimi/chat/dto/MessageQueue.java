@@ -90,6 +90,11 @@ public class MessageQueue  implements Serializable {
         return checkpoint;
     }
     public Integer getLastCheckpoint() {
-        return checkpoint.get(checkpoint.size()-1);
+
+        if (!checkpoint.isEmpty()) {
+            return checkpoint.get(checkpoint.size() - 1);
+        }else{
+            return 0;
+        }
     }
 }

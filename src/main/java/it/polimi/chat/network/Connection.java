@@ -10,6 +10,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import static it.polimi.chat.dto.message.MessageType.registryHeartbeat;
 import static it.polimi.chat.dto.message.MessageType.userHeartbeat;
 
 public class Connection {
@@ -131,7 +132,7 @@ public class Connection {
                                     if (vectorclockIsUpdated) {
                                         // If the loop completes without finding a greater timestamp, update the vector clock and print the message
                                         node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
-
+                                        node.getMessageQueues(message.getRoomId()).addMessageToLog(message);
                                         System.out.println(knownUsers.get(message.getUserID()).getUsername() + ": " + message.getContent());
                                     }
 
@@ -141,7 +142,7 @@ public class Connection {
                             logRequestMessage request = (logRequestMessage) msg;
                             if (!request.getUserID().equals(user.getUserID())) {
 
-                                   System.out.println("logrequest received from "+ knownUsers.get(request.getUserid()).getUsername()+ "in room: "+ request.getRoomId()); //todo remove this
+                                   System.out.println("logrequest received from "+ knownUsers.get(request.getUserID()).getUsername()+ "in room: "+ request.getRoomId()); //todo remove this
                                 if (node.getCurrentRoom().getRoomId().equals(request.getRoomId())) {
                                     if (node.getMessageQueues(node.getCurrentRoom().getRoomId()).getLastCheckpoint()>=request.getCheckpoint() && node.getVectorClock().isClockLocallyUpdated(request.getVectorClock().getClock())) {
                                         logResponseMessage Response = new logResponseMessage(user.getUserID(), node.getCurrentRoom().getRoomId(), request.getCheckpoint(), node.getMessageQueues(request.getRoomId()).getTrimmedMessageLog(request.getCheckpoint()),node.getVectorClock());
@@ -191,28 +192,26 @@ public class Connection {
 
 
     // Method to process a room creation message
-    private void processRoomCreationMessage(roomHeartbeatMessage message, RoomRegistry roomRegistry, User user) {
+    private void processRoomCreationMessage(registryHeartbeatMessage message, RoomRegistry roomRegistry, User user) {
         // Check if the message is a room creation message
-        if (message.getRoomId() != null && message.getMulticastIp() != null && message.getUserID() != null) {
-            // Extract the room details from the message
-            String roomId = message.getRoomId();
-            String multicastIp = message.getMulticastIp();
-            String creatorUserId = message.getUserID();
-            BidiMap<String,String> participants = message.getParticipants();
-            if(roomRegistry.getRoomById(roomId)==null){
-                // Create a new chat room with participants
-                ChatRoom room = new ChatRoom(roomId, multicastIp, creatorUserId, participants);
-                // Register the room
-                roomRegistry.registerRoom(room);
-                // prints the message of either room creation or room heartbeat of once they register inside
-                System.out.println("Found room with id: " + roomId);
+            if (!message.getRegistry().getRooms().isEmpty()){
+                // It's a room heartbeat message, update the known rooms
+                for (ChatRoom room : message.getRegistry().getRooms().values()) {
+                    if (roomRegistry.getRooms().containsKey(room.getRoomId())){
+                        String roomId = room.getRoomId();
+                        String multicastIp = room.getMulticastIp();
+                        String userId = message.getUserID();
+                        BidiMap<String,String> participants = room.getParticipants();
+                        for (String participantId : participants.keySet()) {
+                            updateKnownUser(participantId, participants.get(participantId));
+                        }
+                        ChatRoom updatedRoom = new ChatRoom(roomId, multicastIp, userId, participants);
+                        roomRegistry.registerRoom(updatedRoom);
+                        System.out.println("New room updated: " + updatedRoom.getRoomId());
+                    }
+                }
             }
 
-
-        } else {
-            // Print the received broadcast message
-            System.out.println("Found room with id: " + message.getRoomId());
-        }
     }
 
     // Method to listen for broadcast messages
@@ -235,13 +234,11 @@ public class Connection {
                     MessageBase message = (MessageBase) ois.readObject();
 
                     // Process the message
-                    if (message.getType()==userHeartbeat) {
-                        userHeartbeatMessage msg = (userHeartbeatMessage) message;
+                    if (message.getType()==registryHeartbeat) {
+                        registryHeartbeatMessage msg = (registryHeartbeatMessage) message;
                         // It's a heartbeat message, update the known users
-                        updateKnownUser(msg.getUserId(), msg.getUsername());
-                    } else {
-                        roomHeartbeatMessage msg = (roomHeartbeatMessage) message;
-                        processRoomCreationMessage(msg, roomRegistry, user);
+                        updateKnownUser(msg.getUserID(), msg.getUsername());
+                        processRoomCreationMessage(msg,roomRegistry,user);
                     }
                 } catch (SocketException e) {
                     if (isDatagramListenerRunning && node.isRunning()) {
