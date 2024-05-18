@@ -117,7 +117,8 @@ public class Connection {
                                 boolean vectorclockIsUpdated = true;
                                 // Check if the received vector clock has a timestamp for a different process that is greater than the local timestamp
                                 for (Map.Entry<String, Integer> entry : message.getVectorClock().getClock().entrySet()) {
-                                    if (!entry.getKey().equals(message.getUserID()) && entry.getValue()>node.getVectorClock().getClock().get(entry.getKey())) {
+                                    if (!entry.getKey().equals(message.getUserID()) ) {
+                                        if (entry.getValue()>node.getVectorClock().getClock().get(entry.getKey())){
                                         // If so, hold the message and break the loop
                                         logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),
                                                 node.getMessageQueues(node.getCurrentRoom().getRoomId()).getLastCheckpoint(),node.getVectorClock());
@@ -126,7 +127,8 @@ public class Connection {
                                         System.out.println("Holding message until the message from the initial process is received.");
                                         vectorclockIsUpdated = false;
                                         break;
-                                    } else if (entry.getKey().equals(message.getUserID()) && entry.getValue()>node.getVectorClock().getClock().get(entry.getKey())+1) {
+                                        }
+                                    } else if (entry.getValue()>node.getVectorClock().getClock().get(entry.getKey())+1) {
                                         logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),
                                                 node.getMessageQueues(node.getCurrentRoom().getRoomId()).getLastCheckpoint(),node.getVectorClock());
                                         sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
