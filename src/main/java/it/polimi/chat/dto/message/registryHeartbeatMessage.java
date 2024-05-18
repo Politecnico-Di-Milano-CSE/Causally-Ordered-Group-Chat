@@ -9,7 +9,7 @@ public class registryHeartbeatMessage extends MessageBase {
     public registryHeartbeatMessage(String userid,String username,RoomRegistry registry) {
         super(userid, MessageType.registryHeartbeat);
         this.registry = registry;
-        this.username = userid;
+        this.username = username;
     }
 
 public RoomRegistry getRegistry() {

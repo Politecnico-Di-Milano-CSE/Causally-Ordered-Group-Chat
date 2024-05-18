@@ -51,7 +51,7 @@ public class Node {
     }
 
     private void startHeartbeatMessages() {
-        scheduler.scheduleAtFixedRate(this::sendHeartbeatMessage, 2, 5, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::sendHeartbeatMessage, 5, 5, TimeUnit.SECONDS);
     }
 
     private void sendHeartbeatMessage() {
