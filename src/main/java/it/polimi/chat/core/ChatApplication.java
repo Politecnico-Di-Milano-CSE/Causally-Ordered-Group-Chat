@@ -28,93 +28,93 @@ public class ChatApplication {
             System.out.println("8. Shut down the application");
             System.out.println("9. Print your log");
             System.out.print("Choose an option: \n");
+            try {
+                int option = scanner.nextInt();
+                scanner.nextLine(); // consume the newline
 
-            int option = scanner.nextInt();
-            scanner.nextLine(); // consume the newline
+                switch (option) {
+                    case 1:
+                        Set<String> participantUsernames = new HashSet<>();
+                        String roomId;
+                        Set<String> participantUIds = new HashSet<>();
+                        boolean hasInvalidParticipants = false;
 
-            switch (option) {
-                case 1:
-                    Set<String> participantUsernames = new HashSet<>();
-                    String roomId;
-                    Set<String> participantUIds = new HashSet<>();
-                    boolean hasInvalidParticipants = false;
+                        do {
+                            System.out.print("Enter the room ID: ");
+                            roomId = scanner.nextLine();
+                            System.out.print("Enter participant usernames (comma-separated): ");
+                            String participantNamesInput = scanner.nextLine();
+                            participantUsernames.addAll(Arrays.asList(participantNamesInput.split(",")));
+                            if (participantUsernames.isEmpty() || participantUsernames.contains(user.getUsername())) {
+                                participantUsernames.clear();
+                                System.out.print("You can't invite someone with your same username");
+                            }
+                        } while (participantUsernames.isEmpty());
 
-                    do {
-                        System.out.print("Enter the room ID: ");
-                        roomId = scanner.nextLine();
-                        System.out.print("Enter participant usernames (comma-separated): ");
-                        String participantNamesInput = scanner.nextLine();
-                        participantUsernames.addAll(Arrays.asList(participantNamesInput.split(",")));
-                        if (participantUsernames.isEmpty() || participantUsernames.contains(user.getUsername())) {
-                            participantUsernames.clear();
-                            System.out.print("You can't invite someone with your same username");
-                        }
-                    } while (participantUsernames.isEmpty());
-
-                    for (String participant : participantUsernames) {
-                        List<String> temp = node.getConnection().getUsernameToId().get(participant);
-                        if (temp != null && !temp.isEmpty()) {
-                            if (temp.size() == 1) {
-                                participantUIds.add(temp.get(0));
-                            } else {
-                                System.out.println("There is more than one UserIds associated to the Username, select which UID is the correct one:");
-                                for (int i = 0; i < temp.size(); i++) {
-                                    System.out.println(i + ". " + temp.get(i));
+                        for (String participant : participantUsernames) {
+                            List<String> temp = node.getConnection().getUsernameToId().get(participant);
+                            if (temp != null && !temp.isEmpty()) {
+                                if (temp.size() == 1) {
+                                    participantUIds.add(temp.get(0));
+                                } else {
+                                    System.out.println("There is more than one UserIds associated to the Username, select which UID is the correct one:");
+                                    for (int i = 0; i < temp.size(); i++) {
+                                        System.out.println(i + ". " + temp.get(i));
+                                    }
+                                    int i = scanner.nextInt();
+                                    participantUIds.add(temp.get(i));
                                 }
-                                int i = scanner.nextInt();
-                                participantUIds.add(temp.get(i));
-                            }
-                        } else {
-                            hasInvalidParticipants = true;
-                        }
-                    }
-
-                    if (!hasInvalidParticipants) {
-                        ChatRoom createdRoom = node.createRoom(roomId, participantUIds);
-                        System.out.println("Room created with ID: " + createdRoom.getRoomId() + " and multicast IP address: "
-                                + createdRoom.getMulticastIp() + ", Participants: " + participantUsernames);
-                    } else {
-                        System.out.println("Unable to create room due to invalid participants.");
-                    }
-                    break;
-                case 2:
-                    System.out.print("Enter the ID of the room to join: ");
-                    String joinRoomId = scanner.nextLine();
-                    ChatRoom roomToJoin = node.findRoomById(joinRoomId);
-                    if (roomToJoin != null) {
-                        if (node.getCurrentRoom() == null || !node.getCurrentRoom().getRoomId().equals(roomToJoin.getRoomId())) {
-                            if (user.getRooms().contains(roomToJoin)) {
-                                node.joinRoom(roomToJoin);
                             } else {
-                                node.joinRoom(roomToJoin);
+                                hasInvalidParticipants = true;
+                            }
+                        }
+
+                        if (!hasInvalidParticipants) {
+                            ChatRoom createdRoom = node.createRoom(roomId, participantUIds);
+                            System.out.println("Room created with ID: " + createdRoom.getRoomId() + " and multicast IP address: "
+                                    + createdRoom.getMulticastIp() + ", Participants: " + participantUsernames);
+                        } else {
+                            System.out.println("Unable to create room due to invalid participants.");
+                        }
+                        break;
+                    case 2:
+                        System.out.print("Enter the ID of the room to join: ");
+                        String joinRoomId = scanner.nextLine();
+                        ChatRoom roomToJoin = node.findRoomById(joinRoomId);
+                        if (roomToJoin != null) {
+                            if (node.getCurrentRoom() == null || !node.getCurrentRoom().getRoomId().equals(roomToJoin.getRoomId())) {
+                                if (user.getRooms().contains(roomToJoin)) {
+                                    node.joinRoom(roomToJoin);
+                                } else {
+                                    node.joinRoom(roomToJoin);
+                                }
+                            } else {
+                                System.out.println("You are already a member of the room with ID: " + node.getCurrentRoom().getRoomId());
                             }
                         } else {
-                            System.out.println("You are already a member of the room with ID: " + node.getCurrentRoom().getRoomId());
+                            System.out.println("Room with ID " + joinRoomId + " not found.");
                         }
-                    } else {
-                        System.out.println("Room with ID " + joinRoomId + " not found.");
-                    }
-                    break;
-                case 3:
-                    if (node.getCurrentRoom() == null) {
-                        System.out.println("You are not in any room. Join a room before deleting it.");
                         break;
-                    }
-                    ChatRoom roomToDelete = node.getCurrentRoom();
-                    node.deleteRoom(roomToDelete);
-                    System.out.println("Room with ID: " + roomToDelete.getRoomId() + " deleted.");
-                    break;
-                case 4:
-                    System.out.print("Enter the message to send: ");
-                    String message = scanner.nextLine();
-                    node.sendMessage(message);
-                    break;
-                case 5:
-                    node.printKnownRooms();
-                    break;
-                case 6:
-                    node.getConnection().printKnownUsers();
-                    break;
+                    case 3:
+                        if (node.getCurrentRoom() == null) {
+                            System.out.println("You are not in any room. Join a room before deleting it.");
+                            break;
+                        }
+                        ChatRoom roomToDelete = node.getCurrentRoom();
+                        node.deleteRoom(roomToDelete);
+                        System.out.println("Room with ID: " + roomToDelete.getRoomId() + " deleted.");
+                        break;
+                    case 4:
+                        System.out.print("Enter the message to send: ");
+                        String message = scanner.nextLine();
+                        node.sendMessage(message);
+                        break;
+                    case 5:
+                        node.printKnownRooms();
+                        break;
+                    case 6:
+                        node.getConnection().printKnownUsers();
+                        break;
                 /*case 7:
                     if(node.getVectorClock() == null){
                         System.out.println("You don't have a vector clock");
@@ -122,21 +122,24 @@ public class ChatApplication {
                     }
                     node.printVectorclock();
                     break;*/
-                case 7:
-                    if (node.getCurrentRoom() == null) {
-                        System.out.println("You are not in any room. Join a room before leaving it.");
+                    case 7:
+                        if (node.getCurrentRoom() == null) {
+                            System.out.println("You are not in any room. Join a room before leaving it.");
+                            break;
+                        }
+                        node.leaveRoom(node.getCurrentRoom());
                         break;
-                    }
-                    node.leaveRoom(node.getCurrentRoom());
-                    break;
-                case 8:
-                    node.shutdown();
-                    System.exit(0);
-                case 9:
-                    if(node.getCurrentRoom()!=null) {
-                        node.printYourLog();
-                    }
-                    break;
+                    case 8:
+                        node.shutdown();
+                        System.exit(0);
+                    case 9:
+                        if (node.getCurrentRoom() != null) {
+                            node.printYourLog();
+                        }
+                        break;
+                }
+            }catch(Exception e) {
+                System.out.println("Error: " + e.getMessage());
             }
         }
     }
