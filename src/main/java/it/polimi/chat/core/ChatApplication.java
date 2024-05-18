@@ -133,7 +133,10 @@ public class ChatApplication {
                     node.shutdown();
                     System.exit(0);
                 case 9:
-                    node.printYourLog();
+                    if(node.getCurrentRoom()!=null) {
+                        node.printYourLog();
+                    }
+                    break;
             }
         }
     }
