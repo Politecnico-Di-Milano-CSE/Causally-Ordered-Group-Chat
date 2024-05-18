@@ -141,7 +141,9 @@ public class Connection {
                                     if (vectorclockIsUpdated) {
                                         // If the loop completes without finding a greater timestamp, update the vector clock and print the message
                                         node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
-                                        if (user.getUserID()==message.getUserID()){node.getMessageQueues(message.getRoomId()).addMessageToLog(message);}
+                                        if (user.getUserID()!=message.getUserID()){
+                                            node.getMessageQueues(message.getRoomId()).addMessageToLog(message);
+                                        }
                                         System.out.println(knownUsers.get(message.getUserID()).getUsername() + ": " + message.getContent());
                                     }
 
@@ -164,7 +166,7 @@ public class Connection {
                             logResponseMessage response = (logResponseMessage) msg;
                             if(!response.getUserID().equals(user.getUserID()) && Objects.equals(response.getRoomid(), node.getCurrentRoom().getRoomId())) {
                                 if (!node.getVectorClock().isClockLocallyUpdated(response.getVectorClock().getClock())) {
-                                    System.out.println("updating clock from log response"); //todo remove?
+                                    System.out.println("updating clock from log response from "+  knownUsers.get(response.getUserID()).getUsername()); //todo remove?
                                     node.getMessageQueues(node.getCurrentRoom().getRoomId()).updatelog(response.getLog());
                                     node.getVectorClock().updateClock(response.getVectorClock().getClock(), user.getUserID());
                                 }
