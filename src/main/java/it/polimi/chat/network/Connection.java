@@ -166,6 +166,7 @@ public class Connection {
                                 }
                                 break;
                             case logResponse:
+                                System.out.println("log response recieved"); //todo remove
                                 if (!msg.getUserID().equals(user.getUserID())) {
                                     logResponseMessage response = (logResponseMessage) msg;
                                     System.out.println("response size :"+ response.getLog().size()); //todo remove
