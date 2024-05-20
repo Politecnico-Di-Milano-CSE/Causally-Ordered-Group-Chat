@@ -30,7 +30,7 @@ public class Node {
     private static final int MULTICAST_PORT = 49152; // replace with your actual multicast port
     private ScheduledExecutorService scheduler, roomScheduler;
     private VectorClock vectorClock;
-    private Map<String,MessageQueue> messageQueues;
+    private Map<String, MessageQueue> messageQueues;
 
     // Constructor
     public Node(User user) {
@@ -38,7 +38,7 @@ public class Node {
         this.connection = new Connection(); // Initialize the connection
         this.roomRegistry = new RoomRegistry(); // Initialize the room registry
         this.isRunning = true; // Set the node as running
-        messageQueues = new HashMap<String,MessageQueue>();
+        messageQueues = new HashMap<String, MessageQueue>();
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
         this.roomScheduler = Executors.newSingleThreadScheduledExecutor();
 
@@ -114,8 +114,12 @@ public class Node {
             currentRoom = room; // Set the current room
             System.out.println("Joined the room with ID: " + currentRoom.getRoomId());
             user.getRooms().add(room); // Add the room to the user's list of rooms
-            vectorClock = new VectorClock(room.getParticipantUserId());
-            messageQueues.put(room.getRoomId(),new MessageQueue(room.getParticipants()));
+            if(!messageQueues.containsKey(room.getRoomId())) {
+                vectorClock = new VectorClock(room.getParticipantUserId());
+                messageQueues.put(room.getRoomId(), new MessageQueue(room.getParticipants()));
+            }else{
+
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

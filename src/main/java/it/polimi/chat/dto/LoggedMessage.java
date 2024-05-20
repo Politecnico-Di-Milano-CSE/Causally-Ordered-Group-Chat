@@ -14,25 +14,11 @@ public class LoggedMessage implements Comparable<LoggedMessage>, Serializable  {
 
          for(String id:clock.keySet()) {
              if (clock.get(id) < remote.clock.get(id)) {
-                 if (!remote.userid.equals(id)) {
-                         return (-1);
-                 } else{
-                     if (clock.get(userid) != remote.clock.get(remote.userid)+1 && clock.get(userid)+1 != remote.clock.get(userid)) {
-                         return (-1);
-                     }
-                     }
+                return -1;
+             } else if (clock.get(id) > remote.clock.get(id)) {
+                 return 1;
              }
-             if(clock.get(id)>remote.clock.get(id)) {
-                 if (!userid.equals(id)) {
-                     return (1);
-                 } else {
-                     if (clock.get(userid) != remote.clock.get(remote.userid)+1 && clock.get(userid)+1 != remote.clock.get(userid)) {
-                         return (1);
-                     }
-                 }
-             }
-             }
-
+           }
              return 0;
          }
 }
