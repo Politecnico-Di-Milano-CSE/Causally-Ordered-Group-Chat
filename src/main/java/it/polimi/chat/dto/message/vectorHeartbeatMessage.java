@@ -5,8 +5,9 @@ import it.polimi.chat.dto.VectorClock;
 public class vectorHeartbeatMessage extends MessageBase {
     private String RoomId;
     private VectorClock clock;
+    private Integer lastcheckpoint;
 
-    public vectorHeartbeatMessage(String UserId, String RoomId, VectorClock clock) {
+    public vectorHeartbeatMessage(String UserId, String RoomId, VectorClock clock, Integer lastcheckpoint) {
         super(UserId, MessageType.vectorHeartbeat);
         this.RoomId = RoomId;
         this.clock = clock;
@@ -17,5 +18,8 @@ public class vectorHeartbeatMessage extends MessageBase {
     }
     public VectorClock getVectorClock() {
         return clock;
+    }
+    public Integer getLastcheckpoint(){
+        return lastcheckpoint;
     }
 }

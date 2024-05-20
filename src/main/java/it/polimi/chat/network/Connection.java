@@ -3,6 +3,7 @@ package it.polimi.chat.network;
 import it.polimi.chat.core.ChatRoom;
 import it.polimi.chat.core.RoomRegistry;
 import it.polimi.chat.core.User;
+import it.polimi.chat.dto.MessageQueue;
 import it.polimi.chat.dto.message.*;
 import org.apache.commons.collections4.BidiMap;
 
@@ -109,32 +110,42 @@ public class Connection {
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                     ObjectInputStream ois = new ObjectInputStream(bais);
                     MessageBase msg = (MessageBase) ois.readObject();
-
-                        switch (msg.getType()) {
+                    MessageQueue currentRoomLog;
+                    switch (msg.getType()) {
                             case roomMessage:
                                 RoomMessage message = (RoomMessage) msg;
                                 if (node.getCurrentRoom() != null && node.getCurrentRoom().getRoomId().equals(message.getRoomId())) {
                                     // Check if the message is from the current user
                                     boolean vectorclockIsUpdated = true;
+                                    currentRoomLog= node.getMessageQueues(node.getCurrentRoom().getRoomId());
                                     // Check if the received vector clock has a timestamp for a different process that is greater than the local timestamp
                                     if (!msg.getUserID().equals(user.getUserID())) {
                                         for (Map.Entry<String, Integer> entry : message.getVectorClock().getClock().entrySet()) {
                                             if (!entry.getKey().equals(message.getUserID())) {
                                                 if (entry.getValue() > node.getVectorClock().getClock().get(entry.getKey())) {
                                                     // If so, hold the message and break the loop
-                                                    logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),
-                                                            node.getMessageQueues(node.getCurrentRoom().getRoomId()).getLastCheckpoint(), node.getVectorClock());
-                                                    sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
-
-                                                    System.out.println("Holding message until the message from the initial process is received.");
+                                                    if(message.getLastCheckpoint()>=currentRoomLog.getLastCheckpoint()) {
+                                                        logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),
+                                                                currentRoomLog.getLastCheckpoint(), node.getVectorClock());
+                                                        sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
+                                                    } else{
+                                                        logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),
+                                                                message.getLastCheckpoint(), node.getVectorClock());
+                                                        sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
+                                                    } System.out.println("Holding message until the message from the initial process is received.");
                                                     vectorclockIsUpdated = false;
                                                     break;
                                                 }
                                             } else if (entry.getValue() > node.getVectorClock().getClock().get(entry.getKey()) + 1) {
-                                                logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),
-                                                        node.getMessageQueues(node.getCurrentRoom().getRoomId()).getLastCheckpoint(), node.getVectorClock());
-                                                sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
-
+                                                if(message.getLastCheckpoint()>=currentRoomLog.getLastCheckpoint()) {
+                                                    logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),
+                                                            currentRoomLog.getLastCheckpoint(), node.getVectorClock());
+                                                    sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
+                                                } else{
+                                                    logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),
+                                                            message.getLastCheckpoint(), node.getVectorClock());
+                                                    sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
+                                                }
                                                 System.out.println("Holding message until the message from the initial process is received.");
                                                 vectorclockIsUpdated = false;
                                                 break;
@@ -143,9 +154,10 @@ public class Connection {
                                     }
                                     if (vectorclockIsUpdated) {
                                         // If the loop completes without finding a greater timestamp, update the vector clock and print the message
-                                        node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
                                         if (!msg.getUserID().equals(user.getUserID())) {
-                                            node.getMessageQueues(message.getRoomId()).addMessageToLog(message);
+                                            node.getVectorClock().updateClock(message.getVectorClock().getClock(), user.getUserID());
+                                            currentRoomLog.addMessageToLog(message);
+                                            currentRoomLog.updateLocalClock(node.getVectorClock());
                                         }
                                         System.out.println(knownUsers.get(message.getUserID()).getUsername() + ": " + message.getContent());
                                     }
@@ -157,8 +169,9 @@ public class Connection {
                                     logRequestMessage request = (logRequestMessage) msg;
                                     System.out.println("logrequest received from " + knownUsers.get(request.getUserID()).getUsername() + "in room: " + request.getRoomId()); //todo remove this
                                     if (node.getCurrentRoom().getRoomId().equals(request.getRoomId())) {
+                                        currentRoomLog= node.getMessageQueues(node.getCurrentRoom().getRoomId());
                                         if (node.getMessageQueues(node.getCurrentRoom().getRoomId()).getLastCheckpoint() >= request.getCheckpoint() && node.getVectorClock().isClockLocallyUpdated(request.getVectorClock().getClock())) {
-                                            logResponseMessage Response = new logResponseMessage(user.getUserID(), node.getCurrentRoom().getRoomId(), request.getCheckpoint(), node.getMessageQueues(request.getRoomId()).getTrimmedMessageLog(request.getCheckpoint()), node.getVectorClock());
+                                            logResponseMessage Response = new logResponseMessage(user.getUserID(), node.getCurrentRoom().getRoomId(), request.getCheckpoint(), currentRoomLog.getTrimmedMessageLog(request.getCheckpoint()), node.getVectorClock());
                                             sendMulticastMessage(Response, node.getCurrentRoom().getMulticastIp());
                                             System.out.println("the thing i sent is this big: "+node.getMessageQueues(request.getRoomId()).getTrimmedMessageLog(request.getCheckpoint()).size()); //todo remove
                                         }
@@ -171,9 +184,10 @@ public class Connection {
                                     logResponseMessage response = (logResponseMessage) msg;
                                     System.out.println("response size :"+ response.getLog().size()); //todo remove
                                     if (response.getRoomid().equals(node.getCurrentRoom().getRoomId())) {
+                                        currentRoomLog= node.getMessageQueues(node.getCurrentRoom().getRoomId());
                                         if (!node.getVectorClock().isClockLocallyUpdated(response.getVectorClock().getClock())) {
                                             System.out.println("updating clock from log response from " + knownUsers.get(response.getUserID()).getUsername()); //todo remove?
-                                            node.getMessageQueues(node.getCurrentRoom().getRoomId()).updatelog(response.getLog());
+                                            currentRoomLog.updatelog(response.getLog(), response.getCheckpoint());
                                             node.getVectorClock().updateClock(response.getVectorClock().getClock(), user.getUserID());
                                         }
                                     }

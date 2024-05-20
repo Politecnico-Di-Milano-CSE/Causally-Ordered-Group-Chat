@@ -43,10 +43,7 @@ public class VectorClock implements Serializable {
     public boolean isClockLocallyUpdated(Map<String, Integer> receivedClock) {
         boolean isUpdated = true;
         for (Map.Entry<String, Integer> entry : receivedClock.entrySet()) {
-            String userId = entry.getKey();
-            Integer remoteTimestamp = entry.getValue();
-            Integer localTimestamp = clock.getOrDefault(userId, 0);
-            if (remoteTimestamp > localTimestamp) {
+            if (entry.getValue() > clock.getOrDefault(entry.getKey(), 0)) {
                 isUpdated = false;
                 break;
             }
