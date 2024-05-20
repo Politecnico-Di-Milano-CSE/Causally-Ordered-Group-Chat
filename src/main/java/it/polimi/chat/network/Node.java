@@ -164,6 +164,7 @@ public class Node {
                 connection.sendMulticastMessage(message, currentRoom.getMulticastIp());
                 /*System.out.println("Message sent to the room with ID: " + currentRoom.getRoomId());
                 printVectorclock(); todo remove*/
+                messageQueues.get(getCurrentRoom().getRoomId()).updateLocalClock(vectorClock);
                 messageQueues.get(currentRoom.getRoomId()).addMessageToLog(message);
             } else {
                 System.out.println("Cannot send message: local clock is not updated correctly.");
