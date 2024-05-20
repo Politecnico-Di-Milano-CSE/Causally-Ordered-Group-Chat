@@ -28,9 +28,16 @@ public class ChatApplication {
             System.out.println("8. Shut down the application");
             System.out.println("9. Print your log");
             System.out.print("Choose an option: \n");
+            Integer option;
+            option=0;
             try {
-                int option = scanner.nextInt();
-                scanner.nextLine(); // consume the newline
+                option= scanner.nextInt();
+            }catch(Exception e) {
+
+            }
+
+                scanner.nextLine();
+                // consume the newline
 
                 switch (option) {
                     case 1:
@@ -137,10 +144,10 @@ public class ChatApplication {
                             node.printYourLog();
                         }
                         break;
+                    default:
+                        break;
                 }
-            }catch(Exception e) {
-                System.out.println("Error: " + e.getMessage());
-            }
+
         }
     }
 }
