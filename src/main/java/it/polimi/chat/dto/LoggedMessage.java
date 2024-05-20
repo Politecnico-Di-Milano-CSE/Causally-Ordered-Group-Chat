@@ -11,14 +11,19 @@ public class LoggedMessage implements Comparable<LoggedMessage>, Serializable  {
     @Override
     public int compareTo(LoggedMessage remote) {
 
-
-         for(String id:clock.keySet()) {
-             if (clock.get(id) < remote.clock.get(id)) {
-                return -1;
-             } else if (clock.get(id) > remote.clock.get(id)) {
-                 return 1;
-             }
-           }
-             return 0;
-         }
+        if (!userid.equals(remote.userid)) {
+            if (clock.get(userid) >= remote.clock.get(userid)) {
+                return (1);
+            }else if (clock.get(userid) < remote.clock.get(userid)) {
+                return (-1);
+            }
+        } else  {
+            if (clock.get(userid) >= remote.clock.get(userid)) {
+                return (1);
+            }else if (clock.get(userid) < remote.clock.get(userid)) {
+                return (-1);
+            }
+        }
+        return 0;
+    }
 }

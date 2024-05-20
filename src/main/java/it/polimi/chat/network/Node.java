@@ -115,10 +115,10 @@ public class Node {
             System.out.println("Joined the room with ID: " + currentRoom.getRoomId());
             user.getRooms().add(room); // Add the room to the user's list of rooms
             if(!messageQueues.containsKey(room.getRoomId())) {
-                vectorClock = new VectorClock(room.getParticipantUserId());
+                this.vectorClock = new VectorClock(room.getParticipantUserId());
                 messageQueues.put(room.getRoomId(), new MessageQueue(room.getParticipants()));
             }else{
-
+                this.vectorClock=messageQueues.get(room.getRoomId()).getLocalVectorClock();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -159,7 +159,7 @@ public class Node {
         if (currentRoom.getParticipantUserId().contains(user.getUserID())) {
             vectorClock.incrementLocalClock(user.getUserID());
             RoomMessage message = new RoomMessage(user.getUserID(), currentRoom.getRoomId(), currentRoom.getMulticastIp(),
-                                        content, vectorClock, currentRoom.getParticipants());
+                                        content, vectorClock, currentRoom.getParticipants(), messageQueues.get(currentRoom.getRoomId()).getLastCheckpoint());
             if (vectorClock.isClockLocallyUpdated(message.getVectorClock().getClock())) {
                 connection.sendMulticastMessage(message, currentRoom.getMulticastIp());
                 /*System.out.println("Message sent to the room with ID: " + currentRoom.getRoomId());

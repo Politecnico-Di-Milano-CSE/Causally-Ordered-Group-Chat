@@ -24,12 +24,6 @@ public class MessageQueue {
         msg.userid=message.getUserID();
         msg.ischeckpoint=false;
         msg.clock=message.getVectorClock().getClock();
-        int i=getLastCheckpointIndex();
-        int j=getLastCheckpoint();
-        /*while (){
-           todo add stuff
-        }
-*/
         int z =0;
             for(String id : participants.keySet()) {
                 if (z < message.getVectorClock().getClock().get(id)){
@@ -42,8 +36,8 @@ public class MessageQueue {
         }
         messageLog.add(msg);
     }
-    public void updatelog (ArrayList<LoggedMessage>  trimmedLog){
-        Integer i = getLastCheckpoint();
+    public void updatelog (ArrayList<LoggedMessage>  trimmedLog, Integer remotecheckpoint){
+        Integer i = remotecheckpoint;
         int j=0;
         for (j =0;j< trimmedLog.size() && i< messageLog.size();j++){
             System.out.println("do i get heredcc");
@@ -100,10 +94,10 @@ public class MessageQueue {
     public Integer getLastCheckpointIndex(){
             return checkpoint.get(checkpoint.size()-1);
     }
-    private void UpdateLocalClock(VectorClock vectorClock){
+    public void updateLocalClock(VectorClock vectorClock){
         localVectorClock = vectorClock;
     }
-    private VectorClock getLocalVectorClock(){
+    public VectorClock getLocalVectorClock(){
         return localVectorClock;
     }
 
