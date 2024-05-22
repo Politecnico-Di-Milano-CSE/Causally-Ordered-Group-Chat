@@ -29,7 +29,7 @@ public class MessageQueue {
         msg.clock=message.getVectorClock().getClock();
         messageLog.get(message.getUserID()).add(msg);
     }
-    public void updatelog (Map<String,ArrayList<LoggedMessage>>  trimmedLog, VectorClock remoteClock){
+    public void updatelog (Map<String,ArrayList<LoggedMessage>>  trimmedLog){
         for (Map.Entry<String,ArrayList<LoggedMessage>> entry : trimmedLog.entrySet()) {
             ArrayList<LoggedMessage> localUserLog = messageLog.get(entry.getKey());
             ArrayList<LoggedMessage> remoteUserLog= trimmedLog.get(entry.getKey());
@@ -58,14 +58,11 @@ public void printLog(){
 
     public Map<String, ArrayList<LoggedMessage>> getTrimmedMessageLog(VectorClock remoteVectorClock) { //trims the log message to the desired length, supposed to be used specifically to be sent to other users
         Map<String, ArrayList<LoggedMessage>> trimmedLog = new HashMap<>();
-        for (String id : participants.keySet()) {
-            trimmedLog.put(id,new ArrayList<>());
-        }
         Map<String,Integer> remoteClock= remoteVectorClock.getClock();
         for(Map.Entry<String, Integer> entry : remoteClock.entrySet()){
             ArrayList<LoggedMessage> localUserLog = messageLog.get(entry.getKey());
             if (entry.getValue()<localUserLog.size()) {
-                trimmedLog.put(entry.getKey(),(ArrayList<LoggedMessage>) localUserLog.subList(entry.getValue(), localUserLog.size()));
+                trimmedLog.put(entry.getKey(),new ArrayList<>(localUserLog.subList(entry.getValue(), localUserLog.size())));
             }
         }
         return trimmedLog;

@@ -54,7 +54,7 @@ public class ChatApplication {
                             participantUsernames.addAll(Arrays.asList(participantNamesInput.split(",")));
                             if (participantUsernames.isEmpty() || participantUsernames.contains(user.getUsername())) {
                                 participantUsernames.clear();
-                                System.out.print("You can't invite someone with your same username");
+                                System.out.println("You can't invite someone with your same username");
                             }
                         } while (participantUsernames.isEmpty());
 

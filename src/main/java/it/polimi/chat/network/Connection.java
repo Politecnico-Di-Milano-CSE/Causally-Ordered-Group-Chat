@@ -177,7 +177,7 @@ public class Connection {
                                         currentRoomLog= node.getMessageQueues(node.getCurrentRoom().getRoomId());
                                         if (!node.getVectorClock().isClockLocallyUpdated(response.getVectorClock().getClock())) {
                                             System.out.println("updating clock from log response from " + knownUsers.get(response.getUserID()).getUsername()); //todo remove?
-                                            currentRoomLog.updatelog(response.getLog(), response.getVectorClock());
+                                            currentRoomLog.updatelog(response.getLog());
                                             node.getVectorClock().updateClock(response.getVectorClock().getClock(), user.getUserID());
                                         }
                                     }
