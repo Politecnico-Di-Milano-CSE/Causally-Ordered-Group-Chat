@@ -131,16 +131,15 @@ public class Connection {
                                                         vectorclockIsUpdated = false;
                                                         break;
                                                     }
-                                                } else if (entry.getValue() > node.getVectorClock().getClock().get(entry.getKey()) + 1) {
-
+                                                }
+                                            }else if (entry.getValue() > node.getVectorClock().getClock().get(entry.getKey()) + 1) {
+                                                    System.out.println("Holding message until the message from the initial process is received.");
                                                     logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(), node.getVectorClock());
                                                     sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
-
-                                                    System.out.println("Holding message until the message from the initial process is received.");
                                                     vectorclockIsUpdated = false;
                                                     break;
                                                 }
-                                            }
+
                                         }
                                     }
                                         if (vectorclockIsUpdated) {
