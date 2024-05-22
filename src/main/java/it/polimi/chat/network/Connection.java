@@ -142,6 +142,7 @@ public class Connection {
                                                 }
                                             }
                                         }
+                                    }
                                         if (vectorclockIsUpdated) {
                                             // If the loop completes without finding a greater timestamp, update the vector clock and print the message
                                             if (!msg.getUserID().equals(user.getUserID())) {
@@ -152,7 +153,6 @@ public class Connection {
                                             System.out.println(knownUsers.get(message.getUserID()).getUsername() + ": " + message.getContent());
                                         }
 
-                                    }
                                 }
                                 break;
                             case logRequest:
