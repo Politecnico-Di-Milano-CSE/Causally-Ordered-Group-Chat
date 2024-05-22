@@ -9,10 +9,9 @@ public class RoomMessage extends MessageBase {
     private String content;
     private VectorClock vectorClock;
     private BidiMap<String,String> participants;
-    private Integer lastCheckpoint;
     //contains the userids and username of the participants
 
-    public RoomMessage(String userID, String roomId, String multicastIp, String content, VectorClock vectorClock, BidiMap<String,String> participants, Integer Lastcheckpoint) {
+    public RoomMessage(String userID, String roomId, String multicastIp, String content, VectorClock vectorClock, BidiMap<String,String> participants) {
         super(userID ,MessageType.roomMessage);
         this.userID = userID;
         this.roomId = roomId;
@@ -20,7 +19,6 @@ public class RoomMessage extends MessageBase {
         this.content = content;
         this.vectorClock = vectorClock;
         this.participants = participants;
-        this.lastCheckpoint=Lastcheckpoint;
     }
 
     public void setUserID(String userID) {
@@ -65,10 +63,6 @@ public class RoomMessage extends MessageBase {
 
     public void setParticipants(BidiMap<String,String> participants) {
         this.participants = participants;
-    }
-
-    public Integer getLastCheckpoint() {
-        return lastCheckpoint;
     }
 }
 

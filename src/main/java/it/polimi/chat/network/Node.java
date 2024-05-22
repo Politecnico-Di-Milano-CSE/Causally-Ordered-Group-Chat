@@ -159,7 +159,7 @@ public class Node {
         if (currentRoom.getParticipantUserId().contains(user.getUserID())) {
             vectorClock.incrementLocalClock(user.getUserID());
             RoomMessage message = new RoomMessage(user.getUserID(), currentRoom.getRoomId(), currentRoom.getMulticastIp(),
-                                        content, vectorClock, currentRoom.getParticipants(), messageQueues.get(currentRoom.getRoomId()).getLastCheckpoint());
+                                        content, vectorClock, currentRoom.getParticipants());
             if (vectorClock.isClockLocallyUpdated(message.getVectorClock().getClock())) {
                 connection.sendMulticastMessage(message, currentRoom.getMulticastIp());
                 /*System.out.println("Message sent to the room with ID: " + currentRoom.getRoomId());
@@ -258,9 +258,9 @@ public class Node {
     public MessageQueue getMessageQueues(String roomId) {
         return messageQueues.get(roomId);
     }
-    public void printYourLog (){
-        for(LoggedMessage msg : messageQueues.get(currentRoom.getRoomId()).getMessageLog()){
-            System.out.println(currentRoom.getParticipantUsername(msg.userid)+": "+ msg.content);
-        }
+    public void printYourLog (){ //todo redo
+       messageQueues.get(currentRoom.getRoomId()).dumbPrintLog();
+
+        //messageQueues.get(currentRoom.getRoomId()).printLog();
     }
 }

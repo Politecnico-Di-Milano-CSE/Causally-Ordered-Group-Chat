@@ -4,27 +4,22 @@ import it.polimi.chat.dto.LoggedMessage;
 import it.polimi.chat.dto.VectorClock;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 public class logResponseMessage extends MessageBase {
-    private ArrayList <LoggedMessage> log;
-    private Integer checkpoint;
+    private Map<String,ArrayList<LoggedMessage>> log;
     private String RoomId;
     private VectorClock clock;
-    public logResponseMessage(String Userid, String RoomID, Integer checkpoint, ArrayList<LoggedMessage> log, VectorClock clock) {
+    public logResponseMessage(String Userid, String RoomID,Map<String,ArrayList<LoggedMessage>>  log, VectorClock clock) {
         super(Userid, MessageType.logResponse);
         this.RoomId = RoomID;
-        this.checkpoint = checkpoint;
         this.log = log;
         this.clock = clock;
-    }
-
-    public Integer getCheckpoint() {
-        return checkpoint;
     }
     public String getRoomid() {
         return RoomId;
     }
-    public ArrayList<LoggedMessage> getLog() {
+    public Map<String,ArrayList<LoggedMessage>>getLog() {
         return log;
     }
     public VectorClock getVectorClock() {
