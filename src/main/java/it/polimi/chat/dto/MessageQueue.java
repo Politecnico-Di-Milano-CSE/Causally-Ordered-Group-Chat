@@ -4,38 +4,44 @@ import it.polimi.chat.dto.message.RoomMessage;
 import org.apache.commons.collections4.BidiMap;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 public class MessageQueue {
     private BidiMap<String,String> participants;
-    private Map<String, ArrayList<LoggedMessage>> messageLog;
+    private ArrayList <LoggedMessage> messageLog;
     private ArrayList <Integer> checkpoint;
     private VectorClock localVectorClock;
 
     public MessageQueue(BidiMap<String,String> participants) {
         this.participants = participants;
-        messageLog = new HashMap<String, ArrayList<LoggedMessage>>();
+        messageLog = new ArrayList<>();
         checkpoint = new ArrayList<>();
         checkpoint.add(0);
         this.localVectorClock= new VectorClock(participants.keySet());
-        for (String id : participants.keySet()) {
-            messageLog.put(id,new ArrayList<LoggedMessage>());
-        }
     }
     public void addMessageToLog (RoomMessage message) {
         LoggedMessage msg= new LoggedMessage();
         msg.content=message.getContent();
         msg.userid=message.getUserID();
+        msg.ischeckpoint=false;
         msg.clock=message.getVectorClock().getClock();
-        messageLog.get(message.getUserID()).add(msg);
+        int z =0;
+            for(String id : participants.keySet()) {
+                if (z < message.getVectorClock().getClock().get(id)){
+                    z =message.getVectorClock().getClock().get(id);
+                }//gets lowest vectorclock
+            }
+
+        if (checkpoint.size()-1< z){
+            msg.ischeckpoint=true; //logs the checkpoint to the relevant message
+        }
+        messageLog.add(msg);
     }
-    public void updatelog (ArrayList<LoggedMessage>  trimmedLog, Integer remoteCheckpoint){
-        Integer i = remoteCheckpoint;
+    public void updatelog (ArrayList<LoggedMessage>  trimmedLog, Integer remotecheckpoint){
+        Integer i = remotecheckpoint;
         int j=0;
         for (j =0;j< trimmedLog.size() && i< messageLog.size();j++){
             System.out.println("do i get heredcc");
-            switch (trimmedLog.get(j).compareTo(messageLog.get(i))){
+            switch (messageLog.get(i).compareTo(trimmedLog.get(j))){
                    case 1:
                        messageLog.add(i,trimmedLog.get(j));
                        System.out.println(participants.get(trimmedLog.get(j).userid)+": " + trimmedLog.get(j).content);
