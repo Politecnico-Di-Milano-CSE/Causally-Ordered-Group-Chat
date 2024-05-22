@@ -18,7 +18,6 @@ public class MessageQueue {
         messageLog = new HashMap<String, ArrayList<LoggedMessage>>();
         checkpoint = new ArrayList<>();
         checkpoint.add(0);
-        this.localVectorClock= new VectorClock(participants.keySet());
         for (String id : participants.keySet()) {
             messageLog.put(id,new ArrayList<LoggedMessage>());
         }

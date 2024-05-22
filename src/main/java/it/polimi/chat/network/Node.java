@@ -117,6 +117,8 @@ public class Node {
             if(!messageQueues.containsKey(room.getRoomId())) {
                 this.vectorClock = new VectorClock(room.getParticipantUserId());
                 messageQueues.put(room.getRoomId(), new MessageQueue(room.getParticipants()));
+                messageQueues.get(room.getRoomId()).updateLocalClock(this.vectorClock);
+
             }else{
                 this.vectorClock=messageQueues.get(room.getRoomId()).getLocalVectorClock();
             }
