@@ -7,7 +7,6 @@ public class LoggedMessage implements Comparable<LoggedMessage>, Serializable  {
     public String content;
     public String userid;
     public Map<String, Integer> clock;
-    public boolean ischeckpoint;
     @Override
     public int compareTo(LoggedMessage remote) {
 

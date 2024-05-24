@@ -3,21 +3,16 @@ package it.polimi.chat.dto;
 import it.polimi.chat.dto.message.RoomMessage;
 import org.apache.commons.collections4.BidiMap;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class MessageQueue {
     private BidiMap<String,String> participants;
     private Map<String, ArrayList<LoggedMessage>> messageLog;
-    private ArrayList <Integer> checkpoint;
     private VectorClock localVectorClock;
 
     public MessageQueue(BidiMap<String,String> participants) {
         this.participants = participants;
         messageLog = new HashMap<String, ArrayList<LoggedMessage>>();
-        checkpoint = new ArrayList<>();
-        checkpoint.add(0);
         for (String id : participants.keySet()) {
             messageLog.put(id,new ArrayList<LoggedMessage>());
         }
@@ -49,11 +44,28 @@ public void dumbPrintLog(){ //todo remove
         }
 }
 public void printLog(){
-    for (ArrayList<LoggedMessage> userLog : messageLog.values()) {
-        for (LoggedMessage msg : userLog) {
-            System.out.println(participants.get(msg.userid) + ": "+ msg.content);
+        Map <String, Integer> logChecks = new HashMap<>();
+        boolean printdone= false;
+    for (String id : participants.keySet()) {
+        logChecks.put(id,0);
         }
-    }
+
+    while (!printdone){
+        printdone= true;
+        for (Map.Entry<String,ArrayList<LoggedMessage>> entry: messageLog.entrySet()) {
+            ArrayList<LoggedMessage> localUserLog = entry.getValue();
+            while (localUserLog.size() > logChecks.get(entry.getKey())) {
+                printdone= false;
+                LoggedMessage currentMsg = localUserLog.get(logChecks.get(entry.getKey()));
+                if (comparelogclocks(currentMsg, logChecks)) {
+                    System.out.println( participants.get(entry.getKey()) + ": " + localUserLog.get(logChecks.get(entry.getKey())).content);
+                    logChecks.compute(entry.getKey(),(k,v)->v+1);
+                } else{
+                    break;
+                }
+            }
+        }
+}
 }
 
     public Map<String, ArrayList<LoggedMessage>> getTrimmedMessageLog(VectorClock remoteVectorClock) { //trims the log message to the desired length, supposed to be used specifically to be sent to other users
@@ -75,4 +87,12 @@ public void printLog(){
         return localVectorClock;
     }
 
+    public Boolean comparelogclocks (LoggedMessage currentmessage, Map<String, Integer>  previousclock){
+        for (Map.Entry<String,Integer> entry : currentmessage.clock.entrySet()) {
+            if (!currentmessage.userid.equals(entry.getKey())&& entry.getValue()>previousclock.get(entry.getKey())) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

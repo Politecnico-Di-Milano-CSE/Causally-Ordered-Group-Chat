@@ -262,7 +262,7 @@ public class Node {
     }
     public void printYourLog (){ //todo redo
        messageQueues.get(currentRoom.getRoomId()).dumbPrintLog();
-
-        //messageQueues.get(currentRoom.getRoomId()).printLog();
+        System.out.println("correct log?");
+        messageQueues.get(currentRoom.getRoomId()).printLog();
     }
 }
