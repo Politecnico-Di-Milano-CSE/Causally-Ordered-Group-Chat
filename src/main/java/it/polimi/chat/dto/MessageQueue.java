@@ -56,14 +56,16 @@ public void printLog(){
         System.out.println("printdone true");
         for (Map.Entry<String,ArrayList<LoggedMessage>> entry: messageLog.entrySet()) {
             ArrayList<LoggedMessage> localUserLog = entry.getValue();
-            System.out.println("local user size :" + localUserLog.size() + "check size :" + logChecks.get(entry.getKey()));
-            while (localUserLog.size() > logChecks.get(entry.getKey())) {
+            String username = participants.get(entry.getKey());
+            Integer checkedlog =logChecks.get(entry.getKey());
+            System.out.println("local user size :" + localUserLog.size() + "check log :" + checkedlog);
+            while (localUserLog.size() > checkedlog) {
                 printdone= false;
-                LoggedMessage currentMsg = localUserLog.get(logChecks.get(entry.getKey()));
+                LoggedMessage currentMsg = localUserLog.get(checkedlog);
                 if (compareLogClocks(currentMsg, logChecks)) {
                     System.out.println("i got to the compare log clocks");
                     System.out.println( participants.get(entry.getKey()) + ": " + localUserLog.get(logChecks.get(entry.getKey())).content);
-                    logChecks.merge(entry.getKey(),1, (a,b)->a+b );
+                    logChecks.put(entry.getKey(), checkedlog+1);
                     System.out.println("updated log clocks hopefully:" + logChecks.get(entry.getKey()));
                 } else{
                     System.out.println("sei nel break");
@@ -95,7 +97,7 @@ public void printLog(){
 
     public Boolean compareLogClocks (LoggedMessage currentmessage, Map<String, Integer>  previousclock){
         for (Map.Entry<String,Integer> entry : currentmessage.clock.entrySet()) {
-            if (!currentmessage.userid.equals(entry.getKey())&& entry.getValue()>previousclock.get(entry.getKey())) {
+            if ((!currentmessage.userid.equals(entry.getKey()))&& entry.getValue()>previousclock.get(entry.getKey())) {
                 return false;
             }
         }
