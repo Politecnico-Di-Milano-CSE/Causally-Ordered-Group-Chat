@@ -66,6 +66,7 @@ public void printLog(){
                     System.out.println("i got to the compare log clocks");
                     System.out.println( participants.get(entry.getKey()) + ": " + localUserLog.get(logChecks.get(entry.getKey())).content);
                     logChecks.put(entry.getKey(), checkedlog+1);
+                    checkedlog =logChecks.get(entry.getKey());
                     System.out.println("updated log clocks hopefully:" + logChecks.get(entry.getKey()));
                 } else{
                     System.out.println("sei nel break");
