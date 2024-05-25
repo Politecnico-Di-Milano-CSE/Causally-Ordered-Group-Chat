@@ -50,16 +50,17 @@ public void printLog(){
     for (String id : participants.keySet()) {
         logChecks.put(id,0);
         }
-
-    while (!printdone){
+    int i=0;
+    while (!printdone && i<10){
         printdone= true;
+        i++;
         System.out.println("printdone true");
         for (Map.Entry<String,ArrayList<LoggedMessage>> entry: messageLog.entrySet()) {
             ArrayList<LoggedMessage> localUserLog = entry.getValue();
             String username = participants.get(entry.getKey());
             Integer checkedlog =logChecks.get(entry.getKey());
             System.out.println("local user size :" + localUserLog.size() + "check log :" + checkedlog);
-            while (localUserLog.size() > checkedlog) {
+            while (checkedlog< localUserLog.size()+1) {
                 printdone= false;
                 LoggedMessage currentMsg = localUserLog.get(checkedlog);
                 if (compareLogClocks(currentMsg, logChecks)) {
