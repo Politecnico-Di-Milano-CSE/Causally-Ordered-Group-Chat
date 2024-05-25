@@ -59,8 +59,8 @@ public void printLog(){
             ArrayList<LoggedMessage> localUserLog = entry.getValue();
             String username = participants.get(entry.getKey());
             Integer checkedlog =logChecks.get(entry.getKey());
-            System.out.println("local user size :" + localUserLog.size() + "check log :" + checkedlog);
-            while (checkedlog< localUserLog.size()+1) {
+            System.out.println("local user size :" + localUserLog.size()+ username + "check log :" + checkedlog);
+            while (checkedlog< localUserLog.size()) {
                 printdone= false;
                 LoggedMessage currentMsg = localUserLog.get(checkedlog);
                 if (compareLogClocks(currentMsg, logChecks)) {
@@ -98,9 +98,13 @@ public void printLog(){
     }
 
     public Boolean compareLogClocks (LoggedMessage currentmessage, Map<String, Integer>  previousclock){
+        System.out.println("in log clocks log:" + participants.get(currentmessage.userid));
         for (Map.Entry<String,Integer> entry : currentmessage.clock.entrySet()) {
-            if ((!currentmessage.userid.equals(entry.getKey()))&& entry.getValue()>previousclock.get(entry.getKey())) {
-                return false;
+            System.out.println(participants.get(entry.getKey())+ "current:"+ entry.getValue()+"checks:"+ previousclock.get(entry.getKey()));
+            if ((!currentmessage.userid.equals(entry.getKey())) ) {
+                if (entry.getValue()>previousclock.get(entry.getKey())) {
+                    return false;
+                }
             }
         }
         return true;
