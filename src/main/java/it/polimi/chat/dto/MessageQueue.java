@@ -8,7 +8,7 @@ import java.util.*;
 public class MessageQueue {
     private BidiMap<String,String> participants;
     private Map<String, ArrayList<LoggedMessage>> messageLog;
-    private VectorClock localVectorClock;
+    private VectorClock speciallocalVectorClock;
 
     public MessageQueue(BidiMap<String,String> participants) {
         this.participants = participants;
@@ -21,8 +21,9 @@ public class MessageQueue {
         LoggedMessage msg= new LoggedMessage();
         msg.content=message.getContent();
         msg.userid=message.getUserID();
-        msg.clock=message.getVectorClock().getClock();
+        msg.clock= new HashMap<>(message.getVectorClock().getClock());
         messageLog.get(message.getUserID()).add(msg);
+        debugprint(msg.clock);
     }
     public void updatelog (Map<String,ArrayList<LoggedMessage>>  trimmedLog){
         for (Map.Entry<String,ArrayList<LoggedMessage>> entry : trimmedLog.entrySet()) {
@@ -92,10 +93,10 @@ public void printLog(){
     }
 
     public void updateLocalClock(VectorClock vectorClock){
-        localVectorClock = vectorClock;
+        speciallocalVectorClock = vectorClock;
     }
     public VectorClock getLocalVectorClock(){
-        return localVectorClock;
+        return speciallocalVectorClock;
     }
 
     public Boolean compareLogClocks (LoggedMessage currentmessage, Map<String, Integer>  previousclock){
