@@ -23,7 +23,6 @@ public class MessageQueue {
         msg.userid=message.getUserID();
         msg.clock= new HashMap<>(message.getVectorClock().getClock());
         messageLog.get(message.getUserID()).add(msg);
-        debugprint(msg.clock);
     }
     public void updatelog (Map<String,ArrayList<LoggedMessage>>  trimmedLog){
         for (Map.Entry<String,ArrayList<LoggedMessage>> entry : trimmedLog.entrySet()) {
@@ -100,13 +99,9 @@ public void printLog(){
     }
 
     public Boolean compareLogClocks (LoggedMessage currentmessage, Map<String, Integer>  previousclock){
-        System.out.println("in log clocks log:" + participants.get(currentmessage.userid)+" content: "+currentmessage.content);
         for (Map.Entry<String,Integer> entry : currentmessage.clock.entrySet()) {
-            System.out.println(participants.get(entry.getKey())+ "current:"+ entry.getValue()+"checks:"+ previousclock.get(entry.getKey()));
-            if ((!currentmessage.userid.equals(entry.getKey())) ) {
-                if (entry.getValue()>previousclock.get(entry.getKey())) {
-                    return false;
-                }
+            if ((!currentmessage.userid.equals(entry.getKey())) && entry.getValue()>previousclock.get(entry.getKey())) {
+                return false;
             }
         }
         return true;
