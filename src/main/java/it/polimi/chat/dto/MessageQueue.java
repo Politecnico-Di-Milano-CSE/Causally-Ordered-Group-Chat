@@ -40,6 +40,7 @@ public class MessageQueue {
 public void dumbPrintLog(){ //todo remove
         for (ArrayList<LoggedMessage> userLog : messageLog.values()) {
             for (LoggedMessage msg : userLog) {
+                debugprint(msg.clock);
                 System.out.println(participants.get(msg.userid) + ": "+ msg.content);
             }
         }
@@ -98,7 +99,7 @@ public void printLog(){
     }
 
     public Boolean compareLogClocks (LoggedMessage currentmessage, Map<String, Integer>  previousclock){
-        System.out.println("in log clocks log:" + participants.get(currentmessage.userid));
+        System.out.println("in log clocks log:" + participants.get(currentmessage.userid)+" content: "+currentmessage.content);
         for (Map.Entry<String,Integer> entry : currentmessage.clock.entrySet()) {
             System.out.println(participants.get(entry.getKey())+ "current:"+ entry.getValue()+"checks:"+ previousclock.get(entry.getKey()));
             if ((!currentmessage.userid.equals(entry.getKey())) ) {
@@ -109,4 +110,10 @@ public void printLog(){
         }
         return true;
     }
-}
+    public void debugprint(Map<String,Integer> clock){
+        System.out.println("Vector Clock:");
+        for (Map.Entry<String, Integer> entry : clock.entrySet()) {
+            System.out.println("- User ID: " + participants.get(entry.getKey()) + ", Timestamp: " + entry.getValue());
+        }
+    }
+    }
