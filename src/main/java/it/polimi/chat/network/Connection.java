@@ -3,6 +3,7 @@ package it.polimi.chat.network;
 import it.polimi.chat.core.ChatRoom;
 import it.polimi.chat.core.RoomRegistry;
 import it.polimi.chat.core.User;
+import it.polimi.chat.dto.LoggedMessage;
 import it.polimi.chat.dto.MessageQueue;
 import it.polimi.chat.dto.message.*;
 import org.apache.commons.collections4.BidiMap;
@@ -160,8 +161,16 @@ public class Connection {
                                     System.out.println("logrequest received from " + knownUsers.get(request.getUserID()).getUsername() + "in room: " + request.getRoomId()); //todo remove this
                                     if (node.getCurrentRoom().getRoomId().equals(request.getRoomId())) {
                                         currentRoomLog= node.getMessageQueues(node.getCurrentRoom().getRoomId());
-                                        if (node.getVectorClock().isClockLocallyUpdated(request.getVectorClock().getClock())) {
-                                            logResponseMessage Response = new logResponseMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),currentRoomLog.getTrimmedMessageLog(request.getVectorClock()), node.getVectorClock());
+                                        Map <String, ArrayList< LoggedMessage >> trimmedLog=currentRoomLog.getTrimmedMessageLog(request.getVectorClock());
+                                        Boolean emptyLog = true;
+                                        for (Map.Entry<String, ArrayList< LoggedMessage >> entry : trimmedLog.entrySet()){
+                                            if (entry.getValue().size() > 0){
+                                                emptyLog = false;
+                                                break;
+                                            }
+                                        }
+                                        if(!emptyLog){ //todo change this into not null get trimmedlog
+                                            logResponseMessage Response = new logResponseMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),trimmedLog, node.getVectorClock());
                                             sendMulticastMessage(Response, node.getCurrentRoom().getMulticastIp());
                                             System.out.println("i sent a log"); //todo remove
                                         }
