@@ -28,7 +28,7 @@ public class Node {
     private ChatRoom currentRoom; // The current room this node is in
     private boolean isRunning; // Whether this node is running or not
     private static final int MULTICAST_PORT = 49152; // replace with your actual multicast port
-    private ScheduledExecutorService scheduler, roomScheduler;
+    private ScheduledExecutorService scheduler;
     private VectorClock vectorClock;
     private Map<String, MessageQueue> messageQueues;
 
@@ -40,8 +40,6 @@ public class Node {
         this.isRunning = true; // Set the node as running
         messageQueues = new HashMap<String, MessageQueue>();
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
-        this.roomScheduler = Executors.newSingleThreadScheduledExecutor();
-
         // Start listening for multicast and broadcast messages
         connection.listenForMulticastMessages(this.user, this);
         connection.listenForBroadcastMessages(this.roomRegistry, this.user, this);
@@ -104,12 +102,14 @@ public class Node {
             InetAddress group = InetAddress.getByName(room.getMulticastIp());
             InetAddress addr = InetAddress.getByName(connection.getLocalIPAddress());
             NetworkInterface networkInterface = NetworkInterface.getByInetAddress(addr);
-            connection.getMulticastSocket().leaveGroup(new InetSocketAddress(group, MULTICAST_PORT), networkInterface);
-
+            try {
+                connection.getMulticastSocket().leaveGroup(new InetSocketAddress(group, MULTICAST_PORT), networkInterface);
+            } catch(Exception e){
+                System.out.println("leave group particolare");
+            }
             currentRoom = null; // Set the current room to null
-            roomScheduler.shutdown();
             System.out.println("You left the room " + room.getRoomId() + "."); // Print a message
-        } catch (Exception e) {
+        } catch (Exception e) {// Set the current room to null
             System.out.println("Eehehh boyyy");
             e.printStackTrace(); // Print any exceptions
         }

@@ -464,14 +464,15 @@ public class Connection {
                 InetAddress group = InetAddress.getByName(room.getMulticastIp());
                 InetAddress addr = InetAddress.getByName(getLocalIPAddress());
                 NetworkInterface networkInterface = NetworkInterface.getByInetAddress(addr);
-                multicastSocket.leaveGroup(new InetSocketAddress(group, MULTICAST_PORT), networkInterface);
-
-                // Remove the room from the user's list of rooms
                 user.getRooms().remove(room);
 
                 // Remove the room from the registry
                 roomRegistry.removeRoomById(roomId);
                 System.out.println("Room with ID " + roomId + " has been deleted.");
+                multicastSocket.leaveGroup(new InetSocketAddress(group, MULTICAST_PORT), networkInterface);
+
+                // Remove the room from the user's list of rooms
+
             } else {
                 System.out.println("KEKEKEKEKEKEKEKEKKEKEEKKKKKKKKKKKKKKKKKKKKKKK");
                 //System.out.println("Room with ID " + roomId + " not found.");
