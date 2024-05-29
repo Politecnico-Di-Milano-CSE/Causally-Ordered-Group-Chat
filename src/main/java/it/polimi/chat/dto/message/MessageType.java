@@ -6,5 +6,6 @@ public enum MessageType {
     userHeartbeat,
     registryHeartbeat,
     vectorHeartbeat,
-    roomMessage
+    roomMessage,
+    deleteMessage
 }

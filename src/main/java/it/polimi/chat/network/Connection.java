@@ -9,11 +9,11 @@ import it.polimi.chat.dto.message.*;
 import org.apache.commons.collections4.BidiMap;
 
 import java.io.*;
-import java.lang.instrument.Instrumentation;
 import java.net.*;
 import java.util.*;
 
 import static it.polimi.chat.dto.message.MessageType.registryHeartbeat;
+import static it.polimi.chat.dto.message.MessageType.deleteMessage;
 import static it.polimi.chat.dto.message.MessageType.userHeartbeat;
 
 public class Connection {
@@ -210,8 +210,6 @@ public class Connection {
                                 System.out.println("Default multicast message: "); //todo remove
                         }
 
-
-
                 } catch (SocketException e) {
                     if (isDatagramListenerRunning && node.isRunning()) {
                         e.printStackTrace();
@@ -274,6 +272,12 @@ public class Connection {
                         // It's a heartbeat message, update the known users
                         updateKnownUser(msg.getUserID(), msg.getUsername());
                         processRoomCreationMessage(msg,roomRegistry,user);
+                    }
+                    if (message.getType()==deleteMessage) {
+                        deleteMessage deleteMsg = (deleteMessage) message;
+                        // It's a delete message, leave and delete room for all
+                        System.out.println(deleteMsg.getContent());
+                        processDeleteRoom(roomRegistry, user, deleteMsg);
                     }
                 } catch (SocketException e) {
                     if (isDatagramListenerRunning && node.isRunning()) {
@@ -386,9 +390,9 @@ public class Connection {
             while (interfaces.hasMoreElements()) {
                 NetworkInterface networkInterface = interfaces.nextElement();
                 if (!networkInterface.isLoopback() && networkInterface.isUp() &&
-                    !networkInterface.getDisplayName().contains("VMware") &&
-                    !networkInterface.getDisplayName().contains("Ethernet") &&
-                    !networkInterface.getDisplayName().contains("Box")) {
+                        !networkInterface.getDisplayName().contains("VMware") &&
+                        !networkInterface.getDisplayName().contains("Ethernet") &&
+                        !networkInterface.getDisplayName().contains("Box")) {
 
                     Enumeration<InetAddress> inetAddresses = networkInterface.getInetAddresses();
                     while (inetAddresses.hasMoreElements()) {
@@ -449,6 +453,36 @@ public class Connection {
                 (value & 0xFF);
     }
 
+    public void processDeleteRoom(RoomRegistry roomRegistry, User user, deleteMessage deleteMsg) {
+        String roomId = deleteMsg.getRoomId();
+
+        // Get the room from the registry
+        ChatRoom room = roomRegistry.getRoomById(roomId);
+
+        try {
+            if (room != null) {
+                InetAddress group = InetAddress.getByName(room.getMulticastIp());
+                InetAddress addr = InetAddress.getByName(getLocalIPAddress());
+                NetworkInterface networkInterface = NetworkInterface.getByInetAddress(addr);
+                multicastSocket.leaveGroup(new InetSocketAddress(group, MULTICAST_PORT), networkInterface);
+
+                // Remove the room from the user's list of rooms
+                user.getRooms().remove(room);
+
+                // Remove the room from the registry
+                roomRegistry.removeRoomById(roomId);
+                System.out.println("Room with ID " + roomId + " has been deleted.");
+            } else {
+                System.out.println("KEKEKEKEKEKEKEKEKKEKEEKKKKKKKKKKKKKKKKKKKKKKK");
+                //System.out.println("Room with ID " + roomId + " not found.");
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            roomRegistry.removeRoomById(roomId);
+            //System.out.println("Room with ID " + roomId + " not found.");
+        }
+
+    }
 
 
 }

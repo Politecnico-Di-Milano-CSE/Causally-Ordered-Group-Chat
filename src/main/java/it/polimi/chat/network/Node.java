@@ -43,7 +43,7 @@ public class Node {
         this.roomScheduler = Executors.newSingleThreadScheduledExecutor();
 
         // Start listening for multicast and broadcast messages
-        connection.listenForMulticastMessages( this.user, this);
+        connection.listenForMulticastMessages(this.user, this);
         connection.listenForBroadcastMessages(this.roomRegistry, this.user, this);
 
         startHeartbeatMessages();
@@ -90,8 +90,29 @@ public class Node {
 
     // Method to delete a room
     public void deleteRoom(ChatRoom room) {
-        leaveRoom(room); // Leave the room
+        leaveRoom(room);
+        String content = "Me, " + user.getUsername() + ", smash " + room.getRoomId();
         user.getRooms().remove(room); // Remove the room from the user's list of rooms
+        roomRegistry.removeRoomById(room.getRoomId());
+        deleteMessage deleteMessage = new deleteMessage(user.getUserID(), room.getRoomId(), room.getMulticastIp(), content);
+        connection.sendDatagramMessage(deleteMessage);
+    }
+
+    // Method to leave a room
+    public void leaveRoom(ChatRoom room) {
+        try {
+            InetAddress group = InetAddress.getByName(room.getMulticastIp());
+            InetAddress addr = InetAddress.getByName(connection.getLocalIPAddress());
+            NetworkInterface networkInterface = NetworkInterface.getByInetAddress(addr);
+            connection.getMulticastSocket().leaveGroup(new InetSocketAddress(group, MULTICAST_PORT), networkInterface);
+
+            currentRoom = null; // Set the current room to null
+            roomScheduler.shutdown();
+            System.out.println("You left the room " + room.getRoomId() + "."); // Print a message
+        } catch (Exception e) {
+            System.out.println("Eehehh boyyy");
+            e.printStackTrace(); // Print any exceptions
+        }
     }
 
     // Method to join a room
@@ -127,22 +148,6 @@ public class Node {
         }
     }
 
-    // Method to leave a room
-    public void leaveRoom(ChatRoom room) {
-        try {
-            InetAddress group = InetAddress.getByName(room.getMulticastIp());
-            InetAddress addr = InetAddress.getByName(connection.getLocalIPAddress());
-            NetworkInterface networkInterface = NetworkInterface.getByInetAddress(addr);
-            connection.getMulticastSocket().leaveGroup(new InetSocketAddress(group, MULTICAST_PORT), networkInterface);
-
-            currentRoom = null; // Set the current room to null
-            roomScheduler.shutdown();
-            System.out.println("You left the room " + room.getRoomId() + "."); // Print a message
-        } catch (Exception e) {
-            e.printStackTrace(); // Print any exceptions
-        }
-    }
-
     // Method to send a message
     public void sendMessage(String content) {
         // Find the current room
@@ -161,7 +166,7 @@ public class Node {
         if (currentRoom.getParticipantUserId().contains(user.getUserID())) {
             vectorClock.incrementLocalClock(user.getUserID());
             RoomMessage message = new RoomMessage(user.getUserID(), currentRoom.getRoomId(), currentRoom.getMulticastIp(),
-                                        content, vectorClock, currentRoom.getParticipants());
+                    content, vectorClock, currentRoom.getParticipants());
             if (vectorClock.isClockLocallyUpdated(message.getVectorClock().getClock())) {
                 connection.sendMulticastMessage(message, currentRoom.getMulticastIp());
                 /*System.out.println("Message sent to the room with ID: " + currentRoom.getRoomId());
@@ -261,7 +266,7 @@ public class Node {
         return messageQueues.get(roomId);
     }
     public void printYourLog (){ //todo redo
-       messageQueues.get(currentRoom.getRoomId()).dumbPrintLog();
+        messageQueues.get(currentRoom.getRoomId()).dumbPrintLog();
         System.out.println("correct log?");
         messageQueues.get(currentRoom.getRoomId()).printLog();
     }

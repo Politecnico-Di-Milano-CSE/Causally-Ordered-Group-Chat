@@ -103,13 +103,16 @@ public class ChatApplication {
                         }
                         break;
                     case 3:
-                        if (node.getCurrentRoom() == null) {
-                            System.out.println("You are not in any room. Join a room before deleting it.");
-                            break;
+                        System.out.print("Enter the ID of the room to delete: ");
+                        String roomName = scanner.nextLine();
+                        ChatRoom roomToDelete = node.getRoomRegistry().getRoomById(roomName);
+                        if (roomToDelete != null) {
+                            node.deleteRoom(roomToDelete);
+                            System.out.println("Room with ID: " + roomToDelete.getRoomId() + " deleted.");
                         }
-                        ChatRoom roomToDelete = node.getCurrentRoom();
-                        node.deleteRoom(roomToDelete);
-                        System.out.println("Room with ID: " + roomToDelete.getRoomId() + " deleted.");
+                        else{
+                            System.out.println("Room doesn't exists");
+                        }
                         break;
                     case 4:
                         System.out.print("Enter the message to send: ");
@@ -142,6 +145,7 @@ public class ChatApplication {
                     case 9:
                         if (node.getCurrentRoom() != null) {
                             node.printYourLog();
+                            System.exit(0);
                         }
                         break;
                     default:

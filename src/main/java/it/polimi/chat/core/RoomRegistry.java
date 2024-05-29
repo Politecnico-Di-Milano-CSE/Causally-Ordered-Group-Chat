@@ -26,4 +26,10 @@ public class RoomRegistry implements Serializable {
     public ChatRoom getRoomById(String roomId) {
         return rooms.get(roomId); // Return the room with the given ID
     }
+
+    // Method to remove a room by its ID
+    public void removeRoomById(String roomId) {
+        rooms.remove(roomId); // Remove the room with the given ID
+    }
+
 }
