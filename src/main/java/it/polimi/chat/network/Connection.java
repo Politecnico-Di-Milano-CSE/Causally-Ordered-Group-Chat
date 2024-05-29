@@ -9,6 +9,7 @@ import it.polimi.chat.dto.message.*;
 import org.apache.commons.collections4.BidiMap;
 
 import java.io.*;
+import java.lang.instrument.Instrumentation;
 import java.net.*;
 import java.util.*;
 
@@ -104,7 +105,7 @@ public class Connection {
             isDatagramListenerRunning = true;
             while (node.isRunning() && isDatagramListenerRunning) {
                 try {
-                    byte[] buffer = new byte[65536];
+                    byte[] buffer = new byte[16384]; //65536
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     multicastSocket.receive(packet);
 
@@ -127,16 +128,12 @@ public class Connection {
                                                     // If so, hold the message and break the loop
                                                     {
                                                         System.out.println("Holding message until the message from the initial process is received.");
-                                                        logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(), node.getVectorClock());
-                                                        sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
                                                         vectorclockIsUpdated = false;
                                                         break;
                                                     }
                                                 }
                                             }else if (entry.getValue() > node.getVectorClock().getClock().get(entry.getKey()) + 1) {
                                                     System.out.println("Holding message until the message from the initial process is received.");
-                                                    logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(), node.getVectorClock());
-                                                    sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
                                                     vectorclockIsUpdated = false;
                                                     break;
                                                 }
@@ -151,6 +148,9 @@ public class Connection {
                                                 currentRoomLog.updateLocalClock(node.getVectorClock());
                                             }
                                             System.out.println(knownUsers.get(message.getUserID()).getUsername() + ": " + message.getContent());
+                                        } else {
+                                            logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(), node.getVectorClock());
+                                            sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
                                         }
 
                                 }
@@ -164,6 +164,7 @@ public class Connection {
                                         Map <String, ArrayList< LoggedMessage >> trimmedLog=currentRoomLog.getTrimmedMessageLog(request.getVectorClock());
                                         Boolean emptyLog = true;
                                         for (Map.Entry<String, ArrayList< LoggedMessage >> entry : trimmedLog.entrySet()){
+                                            System.out.println(entry.getValue().size());
                                             if (entry.getValue().size() > 0){
                                                 emptyLog = false;
                                                 break;
@@ -171,8 +172,9 @@ public class Connection {
                                         }
                                         if(!emptyLog){ //todo change this into not null get trimmedlog
                                             logResponseMessage Response = new logResponseMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),trimmedLog, node.getVectorClock());
-                                            sendMulticastMessage(Response, node.getCurrentRoom().getMulticastIp());
                                             System.out.println("i sent a log"); //todo remove
+                                            sendMulticastMessage(Response, node.getCurrentRoom().getMulticastIp());
+                                           // Instrumentation.getObjectSize(Response);
                                         }
                                     }
                                 }
