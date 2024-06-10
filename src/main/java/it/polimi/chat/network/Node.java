@@ -90,6 +90,7 @@ public class Node {
     public void deleteRoom(ChatRoom room) {
         leaveRoom(room);
         String content = "Me, " + user.getUsername() + ", smash " + room.getRoomId();
+        roomRegistry.addDeletedRoom(room.getUniqueId());
         user.getRooms().remove(room); // Remove the room from the user's list of rooms
         roomRegistry.removeRoomById(room.getRoomId());
         deleteMessage deleteMessage = new deleteMessage(user.getUserID(), room.getRoomId(), room.getMulticastIp(), content);

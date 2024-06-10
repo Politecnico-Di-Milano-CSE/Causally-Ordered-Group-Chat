@@ -230,7 +230,7 @@ public class Connection {
             if (!message.getRegistry().getRooms().isEmpty()){
                 // It's a room heartbeat message, update the known rooms
                 for (ChatRoom room : message.getRegistry().getRooms().values()) {
-                    if (!roomRegistry.getRooms().containsKey(room.getRoomId())){
+                    if (!roomRegistry.getRooms().containsValue(room) && !roomRegistry.getDeletedRooms().contains(room.getUniqueId())){
                         String roomId = room.getRoomId();
                         String multicastIp = room.getMulticastIp();
                         String userId = message.getUserID();
@@ -241,6 +241,17 @@ public class Connection {
                         ChatRoom updatedRoom = new ChatRoom(roomId, multicastIp, userId, participants);
                         roomRegistry.registerRoom(updatedRoom);
                         System.out.println("New room updated: " + updatedRoom.getRoomId());
+                    }
+                }
+            }
+            if (!message.getRegistry().getDeletedRooms().isEmpty()){
+                for (String roomId : message.getRegistry().getDeletedRooms()) {
+                    if(!roomRegistry.getDeletedRooms().contains(roomId)){
+                        roomRegistry.addDeletedRoom(roomId);
+                        ChatRoom deletedRoom =roomRegistry.getRoomByUId(roomId);
+                        if(deletedRoom !=null){
+                            processDeleteRoom(roomRegistry ,user,deletedRoom.getRoomId());
+                        }
                     }
                 }
             }
@@ -277,7 +288,8 @@ public class Connection {
                         deleteMessage deleteMsg = (deleteMessage) message;
                         // It's a delete message, leave and delete room for all
                         System.out.println(deleteMsg.getContent());
-                        processDeleteRoom(roomRegistry, user, deleteMsg);
+                        String roomId = deleteMsg.getRoomId();
+                        processDeleteRoom(roomRegistry, user,roomId);
                     }
                 } catch (SocketException e) {
                     if (isDatagramListenerRunning && node.isRunning()) {
@@ -453,8 +465,7 @@ public class Connection {
                 (value & 0xFF);
     }
 
-    public void processDeleteRoom(RoomRegistry roomRegistry, User user, deleteMessage deleteMsg) {
-        String roomId = deleteMsg.getRoomId();
+    public void processDeleteRoom(RoomRegistry roomRegistry, User user, String roomId) {
 
         // Get the room from the registry
         ChatRoom room = roomRegistry.getRoomById(roomId);
