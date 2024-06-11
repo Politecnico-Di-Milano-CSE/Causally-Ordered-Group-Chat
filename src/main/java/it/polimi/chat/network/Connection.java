@@ -230,7 +230,7 @@ public class Connection {
             if (!message.getRegistry().getRooms().isEmpty()){
                 // It's a room heartbeat message, update the known rooms
                 for (ChatRoom room : message.getRegistry().getRooms().values()) {
-                    if (!roomRegistry.getRooms().containsValue(room) && !roomRegistry.getDeletedRooms().contains(room.getUniqueId())){
+                    if (!roomRegistry.getRooms().containsKey(room.getRoomId()) && !roomRegistry.getDeletedRooms().contains(room.getUniqueId())){
                         String roomId = room.getRoomId();
                         String multicastIp = room.getMulticastIp();
                         String userId = message.getUserID();
