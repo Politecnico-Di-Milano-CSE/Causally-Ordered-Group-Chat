@@ -11,6 +11,9 @@ import org.apache.commons.collections4.BidiMap;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static it.polimi.chat.dto.message.MessageType.registryHeartbeat;
 import static it.polimi.chat.dto.message.MessageType.deleteMessage;
@@ -31,12 +34,16 @@ public class Connection {
     private Map<String, List<String>> usernameToId;
     private String localIpAddress;
     private String broadcastAddress;
-
+    private Boolean isupdated;
+    private ScheduledExecutorService scheduler;
+    private User mainuser;
+    private Node mainnode;
     // Constructor
     public Connection() {
         try {
             // Initialize the multicast and broadcast sockets
             localIpAddress = getLocalIPAddress();
+            this.isupdated = true;
             this.broadcastAddress = getBroadcastAddress(localIpAddress);
             this.multicastSocket = new MulticastSocket(MULTICAST_PORT);
             this.datagramSocket = new DatagramSocket(new InetSocketAddress(localIpAddress, DATAGRAM_PORT));
@@ -45,6 +52,8 @@ public class Connection {
             this.isDatagramListenerRunning = false;
             this.knownUsers = new HashMap<>();
             this.usernameToId = new HashMap<>();
+            this.scheduler = Executors.newSingleThreadScheduledExecutor();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -108,11 +117,14 @@ public class Connection {
                     byte[] buffer = new byte[16384]; //65536
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     multicastSocket.receive(packet);
-
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                     ObjectInputStream ois = new ObjectInputStream(bais);
                     MessageBase msg = (MessageBase) ois.readObject();
                     MessageQueue currentRoomLog;
+
+                    this.mainuser = user;
+                    this.mainnode = node;
+
                     switch (msg.getType()) {
                             case roomMessage:
                                 RoomMessage message = (RoomMessage) msg;
@@ -151,6 +163,10 @@ public class Connection {
                                         } else {
                                             logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(), node.getVectorClock());
                                             sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
+                                            if(isupdated){
+                                                isupdated = false;
+                                                scheduler.scheduleAtFixedRate(this::requestLogs,5,5, TimeUnit.SECONDS);
+                                            }
                                         }
 
                                 }
@@ -182,6 +198,7 @@ public class Connection {
                             case logResponse:
                                 System.out.println("log response recieved"); //todo remove
                                 if (!msg.getUserID().equals(user.getUserID())) {
+                                    isupdated=true;
                                     logResponseMessage response = (logResponseMessage) msg;
                                     System.out.println("response size :"); //todo remove
                                     if (response.getRoomid().equals(node.getCurrentRoom().getRoomId())) {
@@ -324,6 +341,14 @@ public class Connection {
             }
         }
     }
+public void requestLogs(){
+        if(!isupdated){
+            logRequestMessage logrequest = new logRequestMessage(mainuser.getUserID(), mainnode.getCurrentRoom().getRoomId(), mainnode.getVectorClock());
+            sendMulticastMessage(logrequest, mainnode.getCurrentRoom().getMulticastIp());
+        } else{
+            scheduler.shutdown();
+        }
+}
 
     public void printKnownUsers() {
         System.out.println("List of known users:");
@@ -489,7 +514,7 @@ public class Connection {
                 //System.out.println("Room with ID " + roomId + " not found.");
             }
         } catch (Exception e){
-            e.printStackTrace();
+            //e.printStackTrace();
             roomRegistry.removeRoomById(roomId);
             //System.out.println("Room with ID " + roomId + " not found.");
         }
