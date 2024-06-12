@@ -61,6 +61,24 @@ public class Connection {
         this.isDatagramListenerRunning = true;
     }
 
+    // Constructor
+    public void simulateComeback() {
+        try {
+            // Initialize the multicast and broadcast sockets
+            localIpAddress = getLocalIPAddress();
+            this.broadcastAddress = getBroadcastAddress(localIpAddress);
+            this.multicastSocket = new MulticastSocket(MULTICAST_PORT);
+            this.datagramSocket = new DatagramSocket(new InetSocketAddress(localIpAddress, DATAGRAM_PORT));
+            // Enable broadcasting on the broadcast socket
+            this.datagramSocket.setBroadcast(true);
+            this.isDatagramListenerRunning = false;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        // Set the broadcast listener as running
+        this.isDatagramListenerRunning = true;
+    }
+
     // Method to stop the broadcast listener
     public void stopBroadcastListener() {
         // Set the flag to false to stop the listener threads
@@ -364,6 +382,10 @@ public void requestLogs(){
 
     public void closeMulticastSocket() {
         multicastSocket.close();
+    }
+
+    public void closeBroadcastScoket() {
+        datagramSocket.close();
     }
 
     public Map<String, User> getKnownUsers() {
