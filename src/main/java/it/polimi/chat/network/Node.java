@@ -26,6 +26,9 @@ public class Node {
     private Connection connection; // The connection used by this node
     private RoomRegistry roomRegistry; // The registry of rooms known to this node
     private ChatRoom currentRoom; // The current room this node is in
+
+    private ChatRoom beforeCrashRoom; // The current room this node is in before crashing
+
     private boolean isRunning; // Whether this node is running or not
     private static final int MULTICAST_PORT = 49152; // replace with your actual multicast port
     private ScheduledExecutorService scheduler;
@@ -270,4 +273,43 @@ public class Node {
         System.out.println("correct log?");
         messageQueues.get(currentRoom.getRoomId()).printLog();
     }
+
+    public void simulateFail() {
+        this.isRunning = false;
+        beforeCrashRoom = currentRoom;
+
+        try{
+            for (ChatRoom room : user.getRooms()) {
+                leaveRoom(room);
+            }
+        }catch (Exception e){
+
+        }
+
+        connection.closeMulticastSocket();
+        connection.closeBroadcastScoket();
+        connection.stopBroadcastListener();
+        scheduler.shutdown();
+    }
+
+    public void simulateComeback(){
+        this.isRunning = true; // Set the node as running
+        connection.simulateComeback();
+
+        restore();
+
+    }
+
+    public void restore(){
+        if (beforeCrashRoom != null){
+            joinRoom(beforeCrashRoom);
+            this.scheduler = Executors.newSingleThreadScheduledExecutor();
+            // Start listening for multicast and broadcast messages
+            connection.listenForMulticastMessages(this.user, this);
+            connection.listenForBroadcastMessages(this.roomRegistry, this.user, this);
+            startHeartbeatMessages();
+
+        }
+    }
+
 }
