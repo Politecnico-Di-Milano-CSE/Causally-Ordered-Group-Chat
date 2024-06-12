@@ -165,7 +165,11 @@ public class Connection {
                                             sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
                                             if(isupdated){
                                                 isupdated = false;
-                                                scheduler.scheduleAtFixedRate(this::requestLogs,5,5, TimeUnit.SECONDS);
+                                                try {
+                                                    scheduler.scheduleAtFixedRate(this::requestLogs, 5, 5, TimeUnit.SECONDS);
+                                                }catch (Exception e){
+                                                    System.out.println("idk how it actually works here"); //todo what
+                                                }
                                             }
                                         }
 
