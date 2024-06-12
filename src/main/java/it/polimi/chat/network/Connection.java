@@ -252,14 +252,11 @@ public class Connection {
                 // It's a room heartbeat message, update the known rooms
                 for (ChatRoom room : message.getRegistry().getRooms().values()) {
                     if (!roomRegistry.getRooms().containsKey(room.getRoomId()) && !roomRegistry.getDeletedRooms().contains(room.getUniqueId())){
-                        String roomId = room.getRoomId();
-                        String multicastIp = room.getMulticastIp();
-                        String userId = message.getUserID();
                         BidiMap<String,String> participants = room.getParticipants();
                         for (String participantId : participants.keySet()) {
                             updateKnownUser(participantId, participants.get(participantId));
                         }
-                        ChatRoom updatedRoom = new ChatRoom(roomId, multicastIp, userId, participants);
+                        ChatRoom updatedRoom = new ChatRoom(room);
                         roomRegistry.registerRoom(updatedRoom);
                         System.out.println("New room updated: " + updatedRoom.getRoomId());
                     }

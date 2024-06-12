@@ -19,6 +19,14 @@ public class ChatRoom implements Serializable {
         this.creatorUserId = creatorUserId;
         this.participants = participants;
     }
+    public ChatRoom(ChatRoom chatRoom) {
+        this.roomId = chatRoom.getRoomId();
+        this.uniqueId = chatRoom.getUniqueId();
+        this.multicastIp = chatRoom.getMulticastIp();
+        this.creatorUserId = chatRoom.getCreatorUserId();
+        this.participants = chatRoom.getParticipants();
+        this.roomId = chatRoom.getRoomId();
+    }
 
     public String getRoomId() {
         return roomId;
