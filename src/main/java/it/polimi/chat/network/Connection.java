@@ -35,7 +35,7 @@ public class Connection {
     private String localIpAddress;
     private String broadcastAddress;
     private Boolean isupdated;
-    private ScheduledExecutorService scheduler;
+    private ScheduledExecutorService logscheduler;
     private User mainuser;
     private Node mainnode;
     // Constructor
@@ -52,7 +52,7 @@ public class Connection {
             this.isDatagramListenerRunning = false;
             this.knownUsers = new HashMap<>();
             this.usernameToId = new HashMap<>();
-            this.scheduler = Executors.newSingleThreadScheduledExecutor();
+            this.logscheduler = Executors.newSingleThreadScheduledExecutor();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -184,7 +184,7 @@ public class Connection {
                                             if(isupdated){
                                                 isupdated = false;
                                                 try {
-                                                    scheduler.scheduleAtFixedRate(this::requestLogs, 5, 5, TimeUnit.SECONDS);
+                                                    logscheduler.scheduleAtFixedRate(this::requestLogs, 5, 5, TimeUnit.SECONDS);
                                                 }catch (Exception e){
                                                     System.out.println("idk how it actually works here"); //todo what
                                                 }
@@ -202,7 +202,7 @@ public class Connection {
                                         Map <String, ArrayList< LoggedMessage >> trimmedLog=currentRoomLog.getTrimmedMessageLog(request.getVectorClock());
                                         Boolean emptyLog = true;
                                         for (Map.Entry<String, ArrayList< LoggedMessage >> entry : trimmedLog.entrySet()){
-                                            System.out.println(entry.getValue().size());
+                                            //System.out.println(entry.getValue().size());
                                             if (entry.getValue().size() > 0){
                                                 emptyLog = false;
                                                 break;
@@ -365,7 +365,7 @@ public void requestLogs(){
             logRequestMessage logrequest = new logRequestMessage(mainuser.getUserID(), mainnode.getCurrentRoom().getRoomId(), mainnode.getVectorClock());
             sendMulticastMessage(logrequest, mainnode.getCurrentRoom().getMulticastIp());
         } else{
-            scheduler.shutdown();
+            logscheduler.shutdown();
         }
 }
 

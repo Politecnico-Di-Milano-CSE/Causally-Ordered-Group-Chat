@@ -270,8 +270,8 @@ public class Node {
         return messageQueues.get(roomId);
     }
     public void printYourLog (){ //todo redo
-        messageQueues.get(currentRoom.getRoomId()).dumbPrintLog();
-        System.out.println("correct log?");
+        //messageQueues.get(currentRoom.getRoomId()).dumbPrintLog();
+        //System.out.println("correct log?");
         messageQueues.get(currentRoom.getRoomId()).printLog();
     }
 

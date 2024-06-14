@@ -40,7 +40,7 @@ public class MessageQueue {
 public void dumbPrintLog(){ //todo remove
         for (ArrayList<LoggedMessage> userLog : messageLog.values()) {
             for (LoggedMessage msg : userLog) {
-                debugprint(msg.clock);
+                //debugprint(msg.clock);
                 System.out.println(participants.get(msg.userid) + ": "+ msg.content);
             }
         }
@@ -55,23 +55,23 @@ public void printLog(){
     while (!printdone && i<10){
         printdone= true;
         i++;
-        System.out.println("printdone true");
+        //System.out.println("printdone true");
         for (Map.Entry<String,ArrayList<LoggedMessage>> entry: messageLog.entrySet()) {
             ArrayList<LoggedMessage> localUserLog = entry.getValue();
             String username = participants.get(entry.getKey());
             Integer checkedlog =logChecks.get(entry.getKey());
-            System.out.println("local user size :" + localUserLog.size()+ username + "check log :" + checkedlog);
+          //  System.out.println("local user size :" + localUserLog.size()+ username + "check log :" + checkedlog);
             while (checkedlog< localUserLog.size()) {
                 printdone= false;
                 LoggedMessage currentMsg = localUserLog.get(checkedlog);
                 if (compareLogClocks(currentMsg, logChecks)) {
-                    System.out.println("i got to the compare log clocks");
-                    System.out.println( participants.get(entry.getKey()) + ": " + localUserLog.get(logChecks.get(entry.getKey())).content);
+                    //System.out.println("i got to the compare log clocks");
+                    System.out.println( username + ": " + localUserLog.get(logChecks.get(entry.getKey())).content);
                     logChecks.put(entry.getKey(), checkedlog+1);
                     checkedlog =logChecks.get(entry.getKey());
-                    System.out.println("updated log clocks hopefully:" + logChecks.get(entry.getKey()));
+            //        System.out.println("updated log clocks hopefully:" + logChecks.get(entry.getKey()));
                 } else{
-                    System.out.println("sei nel break");
+              //      System.out.println("sei nel break");
                     break;
                 }
             }
@@ -107,7 +107,7 @@ public void printLog(){
         return true;
     }
     public void debugprint(Map<String,Integer> clock){
-        System.out.println("Vector Clock:");
+        //System.out.println("Vector Clock:");
         for (Map.Entry<String, Integer> entry : clock.entrySet()) {
             System.out.println("- User ID: " + participants.get(entry.getKey()) + ", Timestamp: " + entry.getValue());
         }
