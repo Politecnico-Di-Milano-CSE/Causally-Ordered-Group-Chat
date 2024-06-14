@@ -157,7 +157,6 @@ public class ChatApplication {
                     case 11:
                         if (node.getCurrentRoom() != null) {
                             node.printYourLog();
-                            System.exit(0);
                         }
                         break;
                     default:
