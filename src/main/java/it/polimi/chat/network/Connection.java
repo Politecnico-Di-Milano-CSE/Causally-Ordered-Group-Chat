@@ -218,11 +218,11 @@ public class Connection {
                                 }
                                 break;
                             case logResponse:
-                                System.out.println("log response recieved"); //todo remove
                                 if (!msg.getUserID().equals(user.getUserID())) {
+                                    System.out.println("log response recieved"); //todo remove
                                     isupdated=true;
                                     logResponseMessage response = (logResponseMessage) msg;
-                                    System.out.println("response size :"); //todo remove
+                                    //System.out.println("response size :"); //todo remove
                                     if (response.getRoomid().equals(node.getCurrentRoom().getRoomId())) {
                                         currentRoomLog= node.getMessageQueues(node.getCurrentRoom().getRoomId());
                                         if (!node.getVectorClock().isClockLocallyUpdated(response.getVectorClock().getClock())) {
