@@ -218,9 +218,12 @@ public class Connection {
                                 }
                                 break;
                             case logResponse:
+                                isupdated=true;
                                 if (!msg.getUserID().equals(user.getUserID())) {
+                                    try {
+                                        this.logscheduler.shutdown();
+                                    }catch (Exception e){}
                                     System.out.println("log response recieved"); //todo remove
-                                    isupdated=true;
                                     logResponseMessage response = (logResponseMessage) msg;
                                     //System.out.println("response size :"); //todo remove
                                     if (response.getRoomid().equals(node.getCurrentRoom().getRoomId())) {
@@ -361,11 +364,12 @@ public class Connection {
         }
     }
 public void requestLogs(){
-        if(!isupdated){
-            logRequestMessage logrequest = new logRequestMessage(mainuser.getUserID(), mainnode.getCurrentRoom().getRoomId(), mainnode.getVectorClock());
+        if(!this.isupdated){
+            logRequestMessage logrequest = new logRequestMessage(this.mainuser.getUserID(), this.mainnode.getCurrentRoom().getRoomId(), this.mainnode.getVectorClock());
             sendMulticastMessage(logrequest, mainnode.getCurrentRoom().getMulticastIp());
         } else{
             logscheduler.shutdown();
+            return;
         }
 }
 
