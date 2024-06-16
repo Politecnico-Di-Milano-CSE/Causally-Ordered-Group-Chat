@@ -103,6 +103,7 @@ public class Node {
     // Method to leave a room
     public void leaveRoom(ChatRoom room) {
         try {
+            connection.shutdownscheduler();
             InetAddress group = InetAddress.getByName(room.getMulticastIp());
             InetAddress addr = InetAddress.getByName(connection.getLocalIPAddress());
             NetworkInterface networkInterface = NetworkInterface.getByInetAddress(addr);

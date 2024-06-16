@@ -379,8 +379,13 @@ public void requestLogs(){
             sendMulticastMessage(logrequest, mainnode.getCurrentRoom().getMulticastIp());
         } else{
             logscheduler.shutdown();
-            return;
         }
+}
+public void shutdownscheduler(){
+
+            logscheduler.shutdown();
+            responsescheduler.shutdown();
+
 }
 public void respondlog(){
         if (!this.isLastMessageResponse) {
