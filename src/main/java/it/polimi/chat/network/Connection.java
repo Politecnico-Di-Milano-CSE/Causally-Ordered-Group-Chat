@@ -14,6 +14,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static it.polimi.chat.dto.message.MessageType.registryHeartbeat;
 import static it.polimi.chat.dto.message.MessageType.deleteMessage;
@@ -38,12 +39,16 @@ public class Connection {
     private ScheduledExecutorService logscheduler;
     private User mainuser;
     private Node mainnode;
+    private logResponseMessage mainresponse;
+    private ScheduledExecutorService responsescheduler;
+    private Boolean isLastMessageResponse;
     // Constructor
     public Connection() {
         try {
             // Initialize the multicast and broadcast sockets
             localIpAddress = getLocalIPAddress();
             this.isupdated = true;
+            this.isLastMessageResponse=false;
             this.broadcastAddress = getBroadcastAddress(localIpAddress);
             this.multicastSocket = new MulticastSocket(MULTICAST_PORT);
             this.datagramSocket = new DatagramSocket(new InetSocketAddress(localIpAddress, DATAGRAM_PORT));
@@ -53,7 +58,7 @@ public class Connection {
             this.knownUsers = new HashMap<>();
             this.usernameToId = new HashMap<>();
             this.logscheduler = Executors.newSingleThreadScheduledExecutor();
-
+            this.responsescheduler = Executors.newSingleThreadScheduledExecutor();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -132,7 +137,7 @@ public class Connection {
             isDatagramListenerRunning = true;
             while (node.isRunning() && isDatagramListenerRunning) {
                 try {
-                    byte[] buffer = new byte[16384]; //65536
+                    byte[] buffer = new byte[65536]; //65536, 16384
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     multicastSocket.receive(packet);
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
@@ -147,6 +152,7 @@ public class Connection {
                             case roomMessage:
                                 RoomMessage message = (RoomMessage) msg;
                                 if (node.getCurrentRoom() != null && node.getCurrentRoom().getRoomId().equals(message.getRoomId())) {
+                                    this.isLastMessageResponse=false;
                                     // Check if the message is from the current user
                                     boolean vectorclockIsUpdated = true;
                                     currentRoomLog = node.getMessageQueues(node.getCurrentRoom().getRoomId());
@@ -198,6 +204,7 @@ public class Connection {
                                     logRequestMessage request = (logRequestMessage) msg;
                                     System.out.println("logrequest received from " + knownUsers.get(request.getUserID()).getUsername() + "in room: " + request.getRoomId()); //todo remove this
                                     if (node.getCurrentRoom().getRoomId().equals(request.getRoomId())) {
+                                        this.isLastMessageResponse=false;
                                         currentRoomLog= node.getMessageQueues(node.getCurrentRoom().getRoomId());
                                         Map <String, ArrayList< LoggedMessage >> trimmedLog=currentRoomLog.getTrimmedMessageLog(request.getVectorClock());
                                         Boolean emptyLog = true;
@@ -209,10 +216,10 @@ public class Connection {
                                             }
                                         }
                                         if(!emptyLog){ //todo change this into not null get trimmedlog
-                                            logResponseMessage Response = new logResponseMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),trimmedLog, node.getVectorClock());
+                                            this.mainresponse = new logResponseMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),trimmedLog, node.getVectorClock());
                                             System.out.println("i sent a log"); //todo remove
-                                            sendMulticastMessage(Response, node.getCurrentRoom().getMulticastIp());
-                                           // Instrumentation.getObjectSize(Response);
+
+                                            this.responsescheduler.schedule(this::respondlog,ThreadLocalRandom.current().nextInt(0,400), TimeUnit.MILLISECONDS);
                                         }
                                     }
                                 }
@@ -227,6 +234,8 @@ public class Connection {
                                     logResponseMessage response = (logResponseMessage) msg;
                                     //System.out.println("response size :"); //todo remove
                                     if (response.getRoomid().equals(node.getCurrentRoom().getRoomId())) {
+
+                                        isLastMessageResponse=true;
                                         currentRoomLog= node.getMessageQueues(node.getCurrentRoom().getRoomId());
                                         if (!node.getVectorClock().isClockLocallyUpdated(response.getVectorClock().getClock())) {
                                             System.out.println("updating clock from log response from " + knownUsers.get(response.getUserID()).getUsername()); //todo remove?
@@ -236,6 +245,7 @@ public class Connection {
                                     }
                                 }
                                 break;
+                                /*
                             case vectorHeartbeat:
                                 if (!msg.getUserID().equals(user.getUserID())) {
                                     vectorHeartbeatMessage heartbeat = (vectorHeartbeatMessage) msg;
@@ -247,7 +257,7 @@ public class Connection {
                                         }
                                     }
                                 }
-                                break;
+                                break; */
                             default:
                                 System.out.println("Default multicast message: "); //todo remove
                         }
@@ -372,6 +382,11 @@ public void requestLogs(){
             return;
         }
 }
+public void respondlog(){
+        if (!this.isLastMessageResponse) {
+            sendMulticastMessage(this.mainresponse, this.mainnode.getCurrentRoom().getMulticastIp());
+        }
+        }
 
     public void printKnownUsers() {
         System.out.println("List of known users:");
