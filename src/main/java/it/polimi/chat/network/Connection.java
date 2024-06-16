@@ -219,7 +219,9 @@ public class Connection {
                                             this.mainresponse = new logResponseMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),trimmedLog, node.getVectorClock());
                                             System.out.println("i sent a log"); //todo remove
 
-                                            this.responsescheduler.schedule(this::respondlog,ThreadLocalRandom.current().nextInt(0,400), TimeUnit.MILLISECONDS);
+                                            try {
+                                                this.responsescheduler.schedule(this::respondlog,ThreadLocalRandom.current().nextInt(0,400), TimeUnit.MILLISECONDS);
+                                            } catch (Exception e){}
                                         }
                                     }
                                 }
