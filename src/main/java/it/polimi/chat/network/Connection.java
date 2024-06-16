@@ -137,7 +137,7 @@ public class Connection {
             isDatagramListenerRunning = true;
             while (node.isRunning() && isDatagramListenerRunning) {
                 try {
-                    byte[] buffer = new byte[65536]; //65536, 16384
+                    byte[] buffer = new byte[16384]; //65536, 16384
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     multicastSocket.receive(packet);
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
@@ -384,6 +384,7 @@ public void requestLogs(){
 }
 public void respondlog(){
         if (!this.isLastMessageResponse) {
+            System.out.println("i sent a log");
             sendMulticastMessage(this.mainresponse, this.mainnode.getCurrentRoom().getMulticastIp());
         }
         }
