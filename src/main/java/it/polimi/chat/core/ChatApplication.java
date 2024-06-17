@@ -46,8 +46,14 @@ public class ChatApplication {
                         boolean hasInvalidParticipants = false;
 
                         do {
-                            System.out.print("Enter the room ID: ");
-                            roomId = scanner.nextLine();
+                           do {
+                               System.out.print("Enter the room ID: ");
+                               roomId = scanner.nextLine();
+                                if (node.getRoomRegistry().getRooms().containsKey(roomId)) {
+                                    System.out.println("Room already exists");
+                                    roomId =null;
+                                }
+                            } while (roomId == null);
                             System.out.print("Enter participant usernames (comma-separated): ");
                             String participantNamesInput = scanner.nextLine();
                             participantUsernames.addAll(Arrays.asList(participantNamesInput.split(",")));
