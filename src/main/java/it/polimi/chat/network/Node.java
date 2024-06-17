@@ -77,11 +77,7 @@ public class Node {
         // Create a new room with participants
         room.addParticipant(user.getUserID(), user.getUsername());
         roomRegistry.registerRoom(room); // Register the room in the room registry
-
         // Broadcast the creation of the room with participant list
-       /* String announcement = "Room with ID -> " + room.getRoomId() + " and multicast IP -> " + multicastIp +
-                " created by userId -> " + user.getUsername() + "\nwith participants -> "
-                + String.join(",", room.getAllParticipantUsername());*/
         registryHeartbeatMessage message = new registryHeartbeatMessage(user.getUserID(), user.getUsername(),roomRegistry);
         System.out.println("Room created!");
         joinRoom(room); // Join the newly created room
@@ -110,13 +106,10 @@ public void removelogs(String roomid){
             NetworkInterface networkInterface = NetworkInterface.getByInetAddress(addr);
             try {
                 connection.getMulticastSocket().leaveGroup(new InetSocketAddress(group, MULTICAST_PORT), networkInterface);
-            } catch(Exception e){
-                System.out.println("leave group particolare");
-            }
+            } catch(Exception e){}
             currentRoom = null; // Set the current room to null
             System.out.println("You left the room " + room.getRoomId() + "."); // Print a message
         } catch (Exception e) {// Set the current room to null
-            System.out.println("Eehehh boyyy");
             e.printStackTrace(); // Print any exceptions
         }
     }
@@ -175,8 +168,6 @@ public void removelogs(String roomid){
                     content, vectorClock, currentRoom.getParticipants());
             if (vectorClock.isClockLocallyUpdated(message.getVectorClock().getClock())) {
                 connection.sendMulticastMessage(message, currentRoom.getMulticastIp());
-                /*System.out.println("Message sent to the room with ID: " + currentRoom.getRoomId());
-                printVectorclock(); todo remove*/
                 messageQueues.get(getCurrentRoom().getRoomId()).updateLocalClock(vectorClock);
                 messageQueues.get(currentRoom.getRoomId()).addMessageToLog(message);
             } else {
