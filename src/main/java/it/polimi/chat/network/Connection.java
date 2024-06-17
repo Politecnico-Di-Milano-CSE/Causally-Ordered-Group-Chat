@@ -365,7 +365,6 @@ public void shutdownscheduler(){ //shuts down the threads related to repeating r
 }
 public void respondlog(){
         if (!this.isLastMessageResponse) {
-            System.out.println("i sent a log");
             sendMulticastMessage(this.mainresponse, this.mainnode.getCurrentRoom().getMulticastIp());
         }
         }
@@ -529,9 +528,9 @@ public void respondlog(){
                 // Remove the room from the registry
                 roomRegistry.removeRoomById(roomId);
                 mainnode.removelogs(roomId);
+                mainnode.leaveRoom(room);
                 System.out.println("Room with ID " + roomId + " has been deleted.");
                 multicastSocket.leaveGroup(new InetSocketAddress(group, MULTICAST_PORT), networkInterface);
-
                 // Remove the room from the user's list of rooms
 
             }
