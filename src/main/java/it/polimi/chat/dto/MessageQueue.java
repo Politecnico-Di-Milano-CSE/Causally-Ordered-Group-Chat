@@ -31,7 +31,9 @@ public class MessageQueue {
             for (int i=0; i<remoteUserLog.size();i++) {
                 if (remoteUserLog.get(i).clock.get(remoteUserLog.get(i).userid)>localUserLog.size()) {
                     localUserLog.add(remoteUserLog.get(i));
+                    debugprint(remoteUserLog.get(i).clock);
                     System.out.println(participants.get(remoteUserLog.get(i).userid) + ":"+ remoteUserLog.get(i).content);
+
                 }
             }
         }
@@ -55,6 +57,7 @@ public void printLog(){
                 printdone= false;
                 LoggedMessage currentMsg = localUserLog.get(checkedlog);
                 if (compareLogClocks(currentMsg, logChecks)) { //the logchecks function as a list of the previous message seen and a vectorclock so that causal ordering is respected even in printing
+                    debugprint(currentMsg.clock);
                     System.out.println( username + ": " + localUserLog.get(logChecks.get(entry.getKey())).content);
                     logChecks.put(entry.getKey(), checkedlog+1);
                     checkedlog =logChecks.get(entry.getKey());}
@@ -94,9 +97,9 @@ public void printLog(){
         return true;
     }
     public void debugprint(Map<String,Integer> clock){
-        //System.out.println("Vector Clock:");
         for (Map.Entry<String, Integer> entry : clock.entrySet()) {
-            System.out.println("- User ID: " + participants.get(entry.getKey()) + ", Timestamp: " + entry.getValue());
+            System.out.print(participants.get(entry.getKey()) + ": " + entry.getValue() +" - ");
         }
+        System.out.println();
     }
     }

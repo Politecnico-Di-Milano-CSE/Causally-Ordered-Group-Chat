@@ -183,6 +183,7 @@ public class Connection {
                                                 currentRoomLog.addMessageToLog(message);
                                                 currentRoomLog.updateLocalClock(node.getVectorClock());
                                             }
+                                            ((RoomMessage) msg).getVectorClock().printVectorClock(message.getParticipants());
                                             System.out.println(knownUsers.get(message.getUserID()).getUsername() + ": " + message.getContent());
                                         } else {
                                             logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(), node.getVectorClock());

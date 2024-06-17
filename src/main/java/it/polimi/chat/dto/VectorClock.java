@@ -54,8 +54,9 @@ public class VectorClock implements Serializable {
     public void printVectorClock(BidiMap <String,String> usernameIds) { //way for the vector clock to print with usernames instead of userids
         System.out.println("Vector Clock:");
         for (Map.Entry<String, Integer> entry : clock.entrySet()) {
-            System.out.println("- User ID: " + usernameIds.get(entry.getKey()) + ", Timestamp: " + entry.getValue());
+            System.out.print(usernameIds.get(entry.getKey()) + ": " + entry.getValue()+ " - ");
         }
+        System.out.println();
     }
 
 }
