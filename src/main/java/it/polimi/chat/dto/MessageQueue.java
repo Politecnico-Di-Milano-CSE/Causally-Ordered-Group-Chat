@@ -93,10 +93,6 @@ public void printLog(){
         }
         return true;
     }
-    public void debugprint(Map<String,Integer> clock){
-        //System.out.println("Vector Clock:");
-        for (Map.Entry<String, Integer> entry : clock.entrySet()) {
-            System.out.println("- User ID: " + participants.get(entry.getKey()) + ", Timestamp: " + entry.getValue());
-        }
-    }
-    }
+
+}
+
