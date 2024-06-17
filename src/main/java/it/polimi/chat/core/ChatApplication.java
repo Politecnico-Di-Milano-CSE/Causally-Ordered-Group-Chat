@@ -26,6 +26,7 @@ public class ChatApplication {
             System.out.println("7. Leave room");
             System.out.println("8. Shut down the application");
             System.out.println("9. Print your log");
+            System.out.println("10. Print your own userid");
             System.out.print("Choose an option: \n");
             Integer option;
             option=0;
@@ -144,6 +145,9 @@ public class ChatApplication {
                         if (node.getCurrentRoom() != null) {
                             node.printYourLog();
                         }
+                        break;
+                    case 10:
+                        System.out.print("Your userid: " + user.getUserID());
                         break;
                     default:
                         break;
