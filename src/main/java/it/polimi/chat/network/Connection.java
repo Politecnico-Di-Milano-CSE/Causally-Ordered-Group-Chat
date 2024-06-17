@@ -190,7 +190,7 @@ public class Connection {
                                             if(isupdated){
                                                 isupdated = false;
                                                 try {
-                                                    logscheduler.scheduleAtFixedRate(this::requestLogs, 5, 5, TimeUnit.SECONDS);
+                                                    logscheduler.scheduleAtFixedRate(this::requestLogs, 5, 5, TimeUnit.SECONDS); //repeat the request until a logresponse is received
                                                 }catch (Exception e){}
                                             }
                                         }
@@ -201,8 +201,7 @@ public class Connection {
                                 if (!msg.getUserID().equals(user.getUserID())) {
                                     logRequestMessage request = (logRequestMessage) msg;
                                     if (node.getCurrentRoom().getRoomId().equals(request.getRoomId())) {
-                                        System.out.println("logrequest received from " + knownUsers.get(request.getUserID()).getUsername() + " for room: " + request.getRoomId());
-                                        this.isLastMessageResponse=false;
+                                           this.isLastMessageResponse=false;
                                         currentRoomLog= node.getMessageQueues(node.getCurrentRoom().getRoomId());
                                         Map <String, ArrayList< LoggedMessage >> trimmedLog=currentRoomLog.getTrimmedMessageLog(request.getVectorClock());
                                         Boolean emptyLog = true;
@@ -215,22 +214,21 @@ public class Connection {
                                         if(!emptyLog){
                                             this.mainresponse = new logResponseMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),trimmedLog, node.getVectorClock());
                                             try {
-                                                this.responsescheduler.schedule(this::respondlog,ThreadLocalRandom.current().nextInt(0,400), TimeUnit.MILLISECONDS);
+                                                this.responsescheduler.schedule(this::respondlog,ThreadLocalRandom.current().nextInt(0,1000), TimeUnit.MILLISECONDS); //sends the response after a random time delay
                                             } catch (Exception e){}
                                         }
                                     }
                                 }
                                 break;
                             case logResponse:
-                                isupdated=true;
                                 if (!msg.getUserID().equals(user.getUserID())) {
                                     this.logscheduler.shutdown();
                                     logResponseMessage response = (logResponseMessage) msg;
                                     if (response.getRoomid().equals(node.getCurrentRoom().getRoomId())) {
-
                                         isLastMessageResponse=true;
                                         currentRoomLog= node.getMessageQueues(node.getCurrentRoom().getRoomId());
                                         if (!node.getVectorClock().isClockLocallyUpdated(response.getVectorClock().getClock())) {
+                                            isupdated=true;
                                             System.out.println("updating log from from " + knownUsers.get(response.getUserID()).getUsername());
                                             currentRoomLog.updatelog(response.getLog());
                                             node.getVectorClock().updateClock(response.getVectorClock().getClock(), user.getUserID());
@@ -273,7 +271,7 @@ public class Connection {
                     }
                 }
             }
-            if (!message.getRegistry().getDeletedRooms().isEmpty()){
+            if (!message.getRegistry().getDeletedRooms().isEmpty()){ //checks the list of deleted rooms and deletes any new rooms added to the deleted list
                 for (String roomId : message.getRegistry().getDeletedRooms()) {
                     if(!roomRegistry.getDeletedRooms().contains(roomId)){
                         roomRegistry.addDeletedRoom(roomId);
@@ -360,8 +358,7 @@ public void requestLogs(){
             logscheduler.shutdown();
         }
 }
-public void shutdownscheduler(){
-
+public void shutdownscheduler(){ //shuts down the threads related to repeating requests and response
             logscheduler.shutdown();
             responsescheduler.shutdown();
 
