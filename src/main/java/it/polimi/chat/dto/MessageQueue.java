@@ -6,9 +6,9 @@ import org.apache.commons.collections4.BidiMap;
 import java.util.*;
 
 public class MessageQueue {
-    private BidiMap<String,String> participants;
-    private Map<String, ArrayList<LoggedMessage>> messageLog;
-    private VectorClock speciallocalVectorClock;
+    private BidiMap<String,String> participants; //userid-username of each participant
+    private Map<String, ArrayList<LoggedMessage>> messageLog; //log of the messages of the room (each user gets their own list)
+    private VectorClock speciallocalVectorClock; //saves the clock of the room
 
     public MessageQueue(BidiMap<String,String> participants) {
         this.participants = participants;
@@ -17,7 +17,7 @@ public class MessageQueue {
             messageLog.put(id,new ArrayList<LoggedMessage>());
         }
     }
-    public void addMessageToLog (RoomMessage message) {
+    public void addMessageToLog (RoomMessage message) { //once checked that the node is up to date with the message add it to the log of the user
         LoggedMessage msg= new LoggedMessage();
         msg.content=message.getContent();
         msg.userid=message.getUserID();
@@ -37,41 +37,28 @@ public class MessageQueue {
         }
 
     }
-public void dumbPrintLog(){ //todo remove
-        for (ArrayList<LoggedMessage> userLog : messageLog.values()) {
-            for (LoggedMessage msg : userLog) {
-                //debugprint(msg.clock);
-                System.out.println(participants.get(msg.userid) + ": "+ msg.content);
-            }
-        }
-}
 public void printLog(){
         Map <String, Integer> logChecks = new HashMap<>();
         boolean printdone= false;
-    for (String id : participants.keySet()) {
+    for (String id : participants.keySet()) { //creates a map that stores all the indexes to make sure every message gets printed
         logChecks.put(id,0);
         }
     int i=0;
     while (!printdone && i<10){
         printdone= true;
         i++;
-        //System.out.println("printdone true");
-        for (Map.Entry<String,ArrayList<LoggedMessage>> entry: messageLog.entrySet()) {
+        for (Map.Entry<String,ArrayList<LoggedMessage>> entry: messageLog.entrySet()) { //stays on a single user until it prints all of their messsages or it sees a message that was has a vector clock that registers another message being sent in between
             ArrayList<LoggedMessage> localUserLog = entry.getValue();
             String username = participants.get(entry.getKey());
             Integer checkedlog =logChecks.get(entry.getKey());
-          //  System.out.println("local user size :" + localUserLog.size()+ username + "check log :" + checkedlog);
-            while (checkedlog< localUserLog.size()) {
+            while (checkedlog< localUserLog.size()) { //if we printed all the messages of the user skip to the next one
                 printdone= false;
                 LoggedMessage currentMsg = localUserLog.get(checkedlog);
-                if (compareLogClocks(currentMsg, logChecks)) {
-                    //System.out.println("i got to the compare log clocks");
+                if (compareLogClocks(currentMsg, logChecks)) { //the logchecks function as a list of the previous message seen and a vectorclock so that causal ordering is respected even in printing
                     System.out.println( username + ": " + localUserLog.get(logChecks.get(entry.getKey())).content);
                     logChecks.put(entry.getKey(), checkedlog+1);
-                    checkedlog =logChecks.get(entry.getKey());
-            //        System.out.println("updated log clocks hopefully:" + logChecks.get(entry.getKey()));
-                } else{
-              //      System.out.println("sei nel break");
+                    checkedlog =logChecks.get(entry.getKey());}
+                else{ //skips to the next user
                     break;
                 }
             }
@@ -79,7 +66,7 @@ public void printLog(){
 }
 }
 
-    public Map<String, ArrayList<LoggedMessage>> getTrimmedMessageLog(VectorClock remoteVectorClock) { //trims the log message to the desired length, supposed to be used specifically to be sent to other users
+    public Map<String, ArrayList<LoggedMessage>> getTrimmedMessageLog(VectorClock remoteVectorClock) { //trims the log message to the desired length for each user, supposed to be used specifically to be sent to other users
         Map<String, ArrayList<LoggedMessage>> trimmedLog = new HashMap<>();
         Map<String,Integer> remoteClock= remoteVectorClock.getClock();
         for(Map.Entry<String, Integer> entry : remoteClock.entrySet()){
