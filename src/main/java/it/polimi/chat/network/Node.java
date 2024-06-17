@@ -76,7 +76,6 @@ public class Node {
         ChatRoom room = new ChatRoom(roomId, multicastIp, user.getUserID(), usernameIds);
         // Create a new room with participants
         room.addParticipant(user.getUserID(), user.getUsername());
-        joinRoom(room); // Join the newly created room
         roomRegistry.registerRoom(room); // Register the room in the room registry
 
         // Broadcast the creation of the room with participant list
@@ -85,6 +84,7 @@ public class Node {
                 + String.join(",", room.getAllParticipantUsername());*/
         registryHeartbeatMessage message = new registryHeartbeatMessage(user.getUserID(), user.getUsername(),roomRegistry);
         System.out.println("Room created!");
+        joinRoom(room); // Join the newly created room
         connection.sendDatagramMessage(message); // Broadcast the announcement
         return room; // Return the newly created room
     }
@@ -92,14 +92,15 @@ public class Node {
     // Method to delete a room
     public void deleteRoom(ChatRoom room) {
         leaveRoom(room);
-        String content = "Me, " + user.getUsername() + ", smash " + room.getRoomId();
         roomRegistry.addDeletedRoom(room.getUniqueId());
         user.getRooms().remove(room); // Remove the room from the user's list of rooms
         roomRegistry.removeRoomById(room.getRoomId());
-        deleteMessage deleteMessage = new deleteMessage(user.getUserID(), room.getRoomId(), room.getMulticastIp(), content);
+        deleteMessage deleteMessage = new deleteMessage(user.getUserID(), room.getRoomId());
         connection.sendDatagramMessage(deleteMessage);
     }
-
+public void removelogs(String roomid){
+        messageQueues.remove(roomid);
+} //remove logs once the room is deleted
     // Method to leave a room
     public void leaveRoom(ChatRoom room) {
         try {
@@ -237,7 +238,7 @@ public class Node {
         for (ChatRoom room : user.getRooms()) {
             leaveRoom(room);
         }
-
+        connection.shutdownscheduler();
         connection.closeMulticastSocket();
         connection.stopBroadcastListener();
         scheduler.shutdown();
@@ -255,13 +256,7 @@ public class Node {
         return vectorClock;
     }
 
-    public void printVectorclock() {
-        if (currentRoom != null) {
-            vectorClock.printVectorClock(currentRoom.getParticipants());
-        } else {
-            System.out.println("You are not in any room.");
-        }
-    }
+
 
     public RoomRegistry getRoomRegistry() {
         return roomRegistry;
@@ -270,48 +265,9 @@ public class Node {
     public MessageQueue getMessageQueues(String roomId) {
         return messageQueues.get(roomId);
     }
-    public void printYourLog (){ //todo redo
-        //messageQueues.get(currentRoom.getRoomId()).dumbPrintLog();
-        //System.out.println("correct log?");
+    public void printYourLog (){
         messageQueues.get(currentRoom.getRoomId()).printLog();
     }
 
-    public void simulateFail() {
-        this.isRunning = false;
-        beforeCrashRoom = currentRoom;
-
-        try{
-            for (ChatRoom room : user.getRooms()) {
-                leaveRoom(room);
-            }
-        }catch (Exception e){
-
-        }
-
-        connection.closeMulticastSocket();
-        connection.closeBroadcastScoket();
-        connection.stopBroadcastListener();
-        scheduler.shutdown();
-    }
-
-    public void simulateComeback(){
-        this.isRunning = true; // Set the node as running
-        connection.simulateComeback();
-
-        restore();
-
-    }
-
-    public void restore(){
-        if (beforeCrashRoom != null){
-            joinRoom(beforeCrashRoom);
-            this.scheduler = Executors.newSingleThreadScheduledExecutor();
-            // Start listening for multicast and broadcast messages
-            connection.listenForMulticastMessages(this.user, this);
-            connection.listenForBroadcastMessages(this.roomRegistry, this.user, this);
-            startHeartbeatMessages();
-
-        }
-    }
 
 }

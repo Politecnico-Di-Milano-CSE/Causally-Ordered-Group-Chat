@@ -23,11 +23,9 @@ public class ChatApplication {
             System.out.println("4. Send a multicast message");
             System.out.println("5. Print list of known rooms");
             System.out.println("6. Print list of known users");
-            System.out.println("7. Close socket");
-            System.out.println("8. Open socket");
-            System.out.println("9. Leave room");
-            System.out.println("10. Shut down the application");
-            System.out.println("11. Print your log");
+            System.out.println("7. Leave room");
+            System.out.println("8. Shut down the application");
+            System.out.println("9. Print your log");
             System.out.print("Choose an option: \n");
             Integer option;
             option=0;
@@ -127,34 +125,16 @@ public class ChatApplication {
                         node.getConnection().printKnownUsers();
                         break;
                     case 7:
-                        if(!node.isRunning()){
-                            System.out.println("The socket is already closed");
-                            break;
-                        }
-                        node.simulateFail();
-                        System.out.println("Socket closed");
-                        break;
-                    case 8:
-                        if(node.isRunning()){
-                            System.out.println("The socket is already opened");
-                            break;
-                        }
-                        else {
-                            node.simulateComeback();
-                            System.out.println("Socket opened");
-                        }
-                        break;
-                    case 9:
                         if (node.getCurrentRoom() == null) {
                             System.out.println("You are not in any room. Join a room before leaving it.");
                             break;
                         }
                         node.leaveRoom(node.getCurrentRoom());
                         break;
-                    case 10:
+                    case 8:
                         node.shutdown();
                         System.exit(0);
-                    case 11:
+                    case 9:
                         if (node.getCurrentRoom() != null) {
                             node.printYourLog();
                         }

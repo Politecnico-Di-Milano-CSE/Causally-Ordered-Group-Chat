@@ -191,9 +191,7 @@ public class Connection {
                                                 isupdated = false;
                                                 try {
                                                     logscheduler.scheduleAtFixedRate(this::requestLogs, 5, 5, TimeUnit.SECONDS);
-                                                }catch (Exception e){
-                                                    System.out.println("idk how it actually works here"); //todo what
-                                                }
+                                                }catch (Exception e){}
                                             }
                                         }
 
@@ -202,23 +200,20 @@ public class Connection {
                             case logRequest:
                                 if (!msg.getUserID().equals(user.getUserID())) {
                                     logRequestMessage request = (logRequestMessage) msg;
-                                    System.out.println("logrequest received from " + knownUsers.get(request.getUserID()).getUsername() + "in room: " + request.getRoomId()); //todo remove this
                                     if (node.getCurrentRoom().getRoomId().equals(request.getRoomId())) {
+                                        System.out.println("logrequest received from " + knownUsers.get(request.getUserID()).getUsername() + " for room: " + request.getRoomId());
                                         this.isLastMessageResponse=false;
                                         currentRoomLog= node.getMessageQueues(node.getCurrentRoom().getRoomId());
                                         Map <String, ArrayList< LoggedMessage >> trimmedLog=currentRoomLog.getTrimmedMessageLog(request.getVectorClock());
                                         Boolean emptyLog = true;
                                         for (Map.Entry<String, ArrayList< LoggedMessage >> entry : trimmedLog.entrySet()){
-                                            //System.out.println(entry.getValue().size());
                                             if (entry.getValue().size() > 0){
                                                 emptyLog = false;
                                                 break;
                                             }
                                         }
-                                        if(!emptyLog){ //todo change this into not null get trimmedlog
+                                        if(!emptyLog){
                                             this.mainresponse = new logResponseMessage(user.getUserID(), node.getCurrentRoom().getRoomId(),trimmedLog, node.getVectorClock());
-                                            System.out.println("i sent a log"); //todo remove
-
                                             try {
                                                 this.responsescheduler.schedule(this::respondlog,ThreadLocalRandom.current().nextInt(0,400), TimeUnit.MILLISECONDS);
                                             } catch (Exception e){}
@@ -229,39 +224,22 @@ public class Connection {
                             case logResponse:
                                 isupdated=true;
                                 if (!msg.getUserID().equals(user.getUserID())) {
-                                    try {
-                                        this.logscheduler.shutdown();
-                                    }catch (Exception e){}
-                                    System.out.println("log response recieved"); //todo remove
+                                    this.logscheduler.shutdown();
                                     logResponseMessage response = (logResponseMessage) msg;
-                                    //System.out.println("response size :"); //todo remove
                                     if (response.getRoomid().equals(node.getCurrentRoom().getRoomId())) {
 
                                         isLastMessageResponse=true;
                                         currentRoomLog= node.getMessageQueues(node.getCurrentRoom().getRoomId());
                                         if (!node.getVectorClock().isClockLocallyUpdated(response.getVectorClock().getClock())) {
-                                            System.out.println("updating clock from log response from " + knownUsers.get(response.getUserID()).getUsername()); //todo remove?
+                                            System.out.println("updating log from from " + knownUsers.get(response.getUserID()).getUsername());
                                             currentRoomLog.updatelog(response.getLog());
                                             node.getVectorClock().updateClock(response.getVectorClock().getClock(), user.getUserID());
                                         }
                                     }
                                 }
                                 break;
-                                /*
-                            case vectorHeartbeat:
-                                if (!msg.getUserID().equals(user.getUserID())) {
-                                    vectorHeartbeatMessage heartbeat = (vectorHeartbeatMessage) msg;
-                                    if (heartbeat.getRoomId().equals(node.getCurrentRoom().getRoomId())) {
-                                        if (!node.getVectorClock().isClockLocallyUpdated(heartbeat.getVectorClock().getClock())) {
-                                            logRequestMessage logrequest = new logRequestMessage(user.getUserID(), node.getCurrentRoom().getRoomId(), node.getVectorClock());
-                                            sendMulticastMessage(logrequest, node.getCurrentRoom().getMulticastIp());
-                                            System.out.println("clock doesnt seem updated from heartbeat"); //todo remove
-                                        }
-                                    }
-                                }
-                                break; */
                             default:
-                                System.out.println("Default multicast message: "); //todo remove
+                                System.out.println("Default multicast message: ");
                         }
 
                 } catch (SocketException e) {
@@ -338,7 +316,6 @@ public class Connection {
                     if (message.getType()==deleteMessage) {
                         deleteMessage deleteMsg = (deleteMessage) message;
                         // It's a delete message, leave and delete room for all
-                        System.out.println(deleteMsg.getContent());
                         String roomId = deleteMsg.getRoomId();
                         processDeleteRoom(roomRegistry, user,roomId);
                     }
@@ -554,20 +531,17 @@ public void respondlog(){
 
                 // Remove the room from the registry
                 roomRegistry.removeRoomById(roomId);
+                mainnode.removelogs(roomId);
                 System.out.println("Room with ID " + roomId + " has been deleted.");
                 multicastSocket.leaveGroup(new InetSocketAddress(group, MULTICAST_PORT), networkInterface);
 
                 // Remove the room from the user's list of rooms
 
-            } else {
-                System.out.println("KEKEKEKEKEKEKEKEKKEKEEKKKKKKKKKKKKKKKKKKKKKKK");
-                //System.out.println("Room with ID " + roomId + " not found.");
             }
         } catch (Exception e){
-            //e.printStackTrace();
+            mainnode.removelogs(roomId);
             roomRegistry.removeRoomById(roomId);
-            //System.out.println("Room with ID " + roomId + " not found.");
-        }
+            }
 
     }
 
